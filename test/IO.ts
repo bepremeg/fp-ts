@@ -1,72 +1,105 @@
 import * as assert from 'assert'
-import { IO, getSemigroup, io, getMonoid } from '../src/IO'
+import * as _ from '../src/IO'
 import { semigroupSum } from '../src/Semigroup'
 import { monoidSum } from '../src/Monoid'
+import * as RA from '../src/ReadonlyArray'
+import * as E from '../src/Either'
+import { pipe } from '../src/function'
 
 describe('IO', () => {
-  it('ap', () => {
-    const double = (n: number): number => n * 2
-    const fab = io.of(double)
-    const fa = io.of(1)
-    assert.strictEqual(fa.ap(fab).run(), 2)
-    assert.strictEqual(fab.ap_(fa).run(), 2)
-  })
+  describe('pipeables', () => {
+    it('map', () => {
+      const double = (n: number): number => n * 2
+      assert.deepStrictEqual(pipe(_.of(1), _.map(double))(), 2)
+    })
 
-  it('chain', () => {
-    const f = (n: number) => io.of(n * 2)
-    assert.strictEqual(
-      io
-        .of(1)
-        .chain(f)
-        .run(),
-      2
-    )
-    assert.strictEqual(io.chain(io.of(1), f).run(), 2)
+    it('ap', () => {
+      const double = (n: number): number => n * 2
+      assert.deepStrictEqual(pipe(_.of(double), _.ap(_.of(1)))(), 2)
+    })
+
+    it('apFirst', () => {
+      assert.deepStrictEqual(pipe(_.of('a'), _.apFirst(_.of('b')))(), 'a')
+    })
+
+    it('apSecond', () => {
+      assert.deepStrictEqual(pipe(_.of('a'), _.apSecond(_.of('b')))(), 'b')
+    })
+
+    it('chain', () => {
+      const f = (n: number) => _.of(n * 2)
+      assert.deepStrictEqual(pipe(_.of(1), _.chain(f))(), 2)
+    })
+
+    it('flatten', () => {
+      assert.deepStrictEqual(pipe(_.of(_.of(1)), _.flatten)(), 1)
+    })
+
+    it('chainFirst', () => {
+      const f = (n: number) => _.of(n * 2)
+      assert.deepStrictEqual(pipe(_.of(1), _.chainFirst(f))(), 1)
+    })
   })
 
   it('getSemigroup', () => {
-    const S = getSemigroup(semigroupSum)
+    const S = _.getSemigroup(semigroupSum)
+    // tslint:disable-next-line: readonly-array
     const log: Array<string> = []
-    const append = (message: string): IO<number> => new IO(() => log.push(message))
-    assert.strictEqual(S.concat(append('a'), append('b')).run(), 3)
-    assert.deepEqual(log, ['a', 'b'])
+    const append = (message: string): _.IO<number> => () => log.push(message)
+    assert.deepStrictEqual(S.concat(append('a'), append('b'))(), 3)
+    assert.deepStrictEqual(log, ['a', 'b'])
   })
 
   it('getMonoid', () => {
-    const M = getMonoid(monoidSum)
+    const M = _.getMonoid(monoidSum)
+    // tslint:disable-next-line: readonly-array
     const log: Array<string> = []
-    const append = (message: string): IO<number> => new IO(() => log.push(message))
-    assert.strictEqual(M.concat(append('a'), M.empty).run(), 1)
-    assert.strictEqual(M.concat(M.empty, append('b')).run(), 2)
-    assert.deepEqual(log, ['a', 'b'])
+    const append = (message: string): _.IO<number> => () => log.push(message)
+    assert.deepStrictEqual(M.concat(append('a'), M.empty)(), 1)
+    assert.deepStrictEqual(M.concat(M.empty, append('b'))(), 2)
+    assert.deepStrictEqual(log, ['a', 'b'])
   })
 
-  it('toString', () => {
-    assert.strictEqual(io.of(1).toString(), 'new IO(<function0>)')
-    assert.strictEqual(io.of(1).inspect(), 'new IO(<function0>)')
+  it('chainRec', () => {
+    const f = (n: number) => (n < 15000 ? _.of(E.left(n + 1)) : _.of(E.right('ok ' + n)))
+    assert.deepStrictEqual(_.ChainRec.chainRec(0, f)(), 'ok 15000')
   })
 
-  it('applyFirst', () => {
-    const log: Array<string> = []
-    const append = (message: string): IO<number> => new IO(() => log.push(message))
-    assert.strictEqual(
-      append('a')
-        .applyFirst(append('b'))
-        .run(),
-      1
+  it('do notation', () => {
+    assert.deepStrictEqual(
+      pipe(
+        _.of(1),
+        _.bindTo('a'),
+        _.bind('b', () => _.of('b'))
+      )(),
+      { a: 1, b: 'b' }
     )
-    assert.deepEqual(log, ['a', 'b'])
   })
 
-  it('applySecond', () => {
-    const log: Array<string> = []
-    const append = (message: string): IO<number> => new IO(() => log.push(message))
-    assert.strictEqual(
-      append('a')
-        .applySecond(append('b'))
-        .run(),
-      2
-    )
-    assert.deepEqual(log, ['a', 'b'])
+  it('apS', () => {
+    assert.deepStrictEqual(pipe(_.of(1), _.bindTo('a'), _.apS('b', _.of('b')))(), { a: 1, b: 'b' })
+  })
+
+  describe('array utils', () => {
+    it('sequenceArray', () => {
+      const arr = RA.range(0, 100)
+      assert.deepStrictEqual(pipe(arr, RA.map(_.of), _.sequenceArray)(), arr)
+    })
+
+    it('traverseArray', () => {
+      const arr = RA.range(0, 100)
+      assert.deepStrictEqual(pipe(arr, _.traverseArray(_.of))(), arr)
+    })
+
+    it('traverseArrayWithIndex', () => {
+      const arr = RA.range(0, 100)
+      assert.deepStrictEqual(
+        pipe(
+          arr,
+          _.traverseArrayWithIndex((index, _data) => _.of(index))
+        )(),
+        arr
+      )
+    })
   })
 })

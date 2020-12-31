@@ -1,434 +1,544 @@
-import { HKT, Type, Type2, Type3, URIS, URIS2, URIS3 } from './HKT'
+/**
+ * `Witherable` represents data structures which can be _partitioned_ with effects in some `Applicative` functor.
+ *
+ * Adapted from https://github.com/LiamGoodacre/purescript-filterable/blob/master/src/Data/Witherable.purs
+ *
+ * @since 2.0.0
+ */
+import { HKT, Kind, Kind2, Kind3, URIS, URIS2, URIS3 } from './HKT'
 import { Option } from './Option'
-import { Traversable, Traversable1, Traversable2, Traversable2C, Traversable3, Traversable3C } from './Traversable'
+import { Traversable, Traversable1, Traversable2, Traversable2C, Traversable3 } from './Traversable'
 import { Applicative, Applicative1, Applicative2, Applicative2C, Applicative3, Applicative3C } from './Applicative'
-import { Filterable, Filterable1, Filterable2, Filterable2C, Filterable3, Filterable3C } from './Filterable'
+import { Filterable, Filterable1, Filterable2, Filterable2C, Filterable3 } from './Filterable'
 import { Either } from './Either'
 import { Separated } from './Compactable'
 
 /**
- * `Witherable` represents data structures which can be _partitioned_ with effects in some {@link Applicative} functor.
- *
- * `wilt` signature (see {@link Compactable} `Separated`):
- *
- * ```ts
- * <F>(F: Applicative<F>) => <RL, RR, A>(wa: HKT<W, A>, f: (a: A) => HKT<F, Either<RL, RR>>) => HKT<F, Separated<HKT<W, RL>, HKT<W, RR>>>
- * ```
- *
- * `wither` signature:
- *
- * ```ts
- * <F>(F: Applicative<F>) => <A, B>(ta: HKT<W, A>, f: (a: A) => HKT<F, Option<B>>) => HKT<F, HKT<W, B>>
- * ```
- *
- * @typeclass
- * @since 1.7.0
- * @see https://github.com/LiamGoodacre/purescript-filterable/blob/master/src/Data/Witherable.purs
+ * @category type classes
+ * @since 2.0.0
  */
 export interface Witherable<T> extends Traversable<T>, Filterable<T> {
   /**
    * Partition a structure with effects
    */
-  wilt: Wilt<T>
+  readonly wilt: Wilt<T>
 
   /**
    * Filter a structure  with effects
    */
-  wither: Wither<T>
+  readonly wither: Wither<T>
 }
 
 /**
- * @since 1.7.0
- * @see Witherable
+ * @category type classes
+ * @since 2.0.0
  */
 export interface Witherable1<T extends URIS> extends Traversable1<T>, Filterable1<T> {
-  wilt: Wilt1<T>
-  wither: Wither1<T>
+  readonly wilt: Wilt1<T>
+  readonly wither: Wither1<T>
 }
 
 /**
- * @since 1.7.0
- * @see Witherable
+ * @category type classes
+ * @since 2.0.0
  */
 export interface Witherable2<T extends URIS2> extends Traversable2<T>, Filterable2<T> {
-  wilt: Wilt2<T>
-  wither: Wither2<T>
+  readonly wilt: Wilt2<T>
+  readonly wither: Wither2<T>
 }
 
 /**
- * @since 1.7.0
- * @see Witherable
+ * @category type classes
+ * @since 2.0.0
  */
 export interface Witherable2C<T extends URIS2, TL> extends Traversable2C<T, TL>, Filterable2C<T, TL> {
-  wilt: Wilt2C<T, TL>
-  wither: Wither2C<T, TL>
+  readonly wilt: Wilt2C<T, TL>
+  readonly wither: Wither2C<T, TL>
 }
 
 /**
- * @since 1.7.0
- * @see Witherable
+ * @category type classes
+ * @since 2.0.0
  */
 export interface Witherable3<T extends URIS3> extends Traversable3<T>, Filterable3<T> {
-  wilt: Wilt3<T>
-  wither: Wither3<T>
+  readonly wilt: Wilt3<T>
+  readonly wither: Wither3<T>
 }
 
 /**
- * @since 1.7.0
- * @see Witherable
- */
-export interface Witherable3C<T extends URIS3, TU, TL> extends Traversable3C<T, TU, TL>, Filterable3C<T, TU, TL> {
-  wilt: Wilt3C<T, TU, TL>
-  wither: Wither3C<T, TU, TL>
-}
-
-/**
- * Interface for `Witherable.wither`
- * @since 1.7.0
+ * @since 2.0.0
  */
 export interface Wither<W> {
-  <F extends URIS3>(F: Applicative3<F>): <FU, FL, A, B>(
+  <F extends URIS3>(F: Applicative3<F>): <A, R, E, B>(
     ta: HKT<W, A>,
-    f: (a: A) => Type3<F, FU, FL, Option<B>>
-  ) => Type3<F, FU, FL, HKT<W, B>>
-  <F extends URIS3, FU, FL>(F: Applicative3C<F, FU, FL>): <A, B>(
+    f: (a: A) => Kind3<F, R, E, Option<B>>
+  ) => Kind3<F, R, E, HKT<W, B>>
+  <F extends URIS3, E>(F: Applicative3C<F, E>): <A, R, B>(
     ta: HKT<W, A>,
-    f: (a: A) => Type3<F, FU, FL, Option<B>>
-  ) => Type3<F, FU, FL, HKT<W, B>>
-  <F extends URIS2>(F: Applicative2<F>): <FL, A, B>(
+    f: (a: A) => Kind3<F, R, E, Option<B>>
+  ) => Kind3<F, R, E, HKT<W, B>>
+  <F extends URIS2>(F: Applicative2<F>): <A, E, B>(
     ta: HKT<W, A>,
-    f: (a: A) => Type2<F, FL, Option<B>>
-  ) => Type2<F, FL, HKT<W, B>>
-  <F extends URIS2, FL>(F: Applicative2C<F, FL>): <A, B>(
+    f: (a: A) => Kind2<F, E, Option<B>>
+  ) => Kind2<F, E, HKT<W, B>>
+  <F extends URIS2, E>(F: Applicative2C<F, E>): <A, B>(
     ta: HKT<W, A>,
-    f: (a: A) => Type2<F, FL, Option<B>>
-  ) => Type2<F, FL, HKT<W, B>>
-  <F extends URIS>(F: Applicative1<F>): <A, B>(ta: HKT<W, A>, f: (a: A) => Type<F, Option<B>>) => Type<F, HKT<W, B>>
+    f: (a: A) => Kind2<F, E, Option<B>>
+  ) => Kind2<F, E, HKT<W, B>>
+  <F extends URIS>(F: Applicative1<F>): <A, B>(ta: HKT<W, A>, f: (a: A) => Kind<F, Option<B>>) => Kind<F, HKT<W, B>>
   <F>(F: Applicative<F>): <A, B>(ta: HKT<W, A>, f: (a: A) => HKT<F, Option<B>>) => HKT<F, HKT<W, B>>
 }
 
 /**
- * @see Wither
- * @since 1.7.0
+ * @since 2.0.0
  */
 export interface Wither1<W extends URIS> {
-  <F extends URIS3>(F: Applicative3<F>): <FU, FL, A, B>(
-    ta: Type<W, A>,
-    f: (a: A) => Type3<F, FU, FL, Option<B>>
-  ) => Type3<F, FU, FL, Type<W, B>>
-  <F extends URIS3, FU, FL>(F: Applicative3C<F, FU, FL>): <A, B>(
-    ta: Type<W, A>,
-    f: (a: A) => Type3<F, FU, FL, Option<B>>
-  ) => Type3<F, FU, FL, Type<W, B>>
-  <F extends URIS2>(F: Applicative2<F>): <FL, A, B>(
-    ta: Type<W, A>,
-    f: (a: A) => Type2<F, FL, Option<B>>
-  ) => Type2<F, FL, Type<W, B>>
-  <F extends URIS2, FL>(F: Applicative2C<F, FL>): <A, B>(
-    ta: Type<W, A>,
-    f: (a: A) => Type2<F, FL, Option<B>>
-  ) => Type2<F, FL, Type<W, B>>
-  <F extends URIS>(F: Applicative1<F>): <A, B>(ta: Type<W, A>, f: (a: A) => Type<F, Option<B>>) => Type<F, Type<W, B>>
-  <F>(F: Applicative<F>): <A, B>(ta: Type<W, A>, f: (a: A) => HKT<F, Option<B>>) => HKT<F, Type<W, B>>
+  <F extends URIS3>(F: Applicative3<F>): <A, R, E, B>(
+    ta: Kind<W, A>,
+    f: (a: A) => Kind3<F, R, E, Option<B>>
+  ) => Kind3<F, R, E, Kind<W, B>>
+  <F extends URIS3, E>(F: Applicative3C<F, E>): <A, R, B>(
+    ta: Kind<W, A>,
+    f: (a: A) => Kind3<F, R, E, Option<B>>
+  ) => Kind3<F, R, E, Kind<W, B>>
+  <F extends URIS2>(F: Applicative2<F>): <A, E, B>(
+    ta: Kind<W, A>,
+    f: (a: A) => Kind2<F, E, Option<B>>
+  ) => Kind2<F, E, Kind<W, B>>
+  <F extends URIS2, E>(F: Applicative2C<F, E>): <A, B>(
+    ta: Kind<W, A>,
+    f: (a: A) => Kind2<F, E, Option<B>>
+  ) => Kind2<F, E, Kind<W, B>>
+  <F extends URIS>(F: Applicative1<F>): <A, B>(ta: Kind<W, A>, f: (a: A) => Kind<F, Option<B>>) => Kind<F, Kind<W, B>>
+  <F>(F: Applicative<F>): <A, B>(ta: Kind<W, A>, f: (a: A) => HKT<F, Option<B>>) => HKT<F, Kind<W, B>>
 }
 
 /**
- * @see Wither
- * @since 1.7.0
+ * @since 2.0.0
  */
 export interface Wither2<W extends URIS2> {
-  <F extends URIS3>(F: Applicative3<F>): <WL, FU, FL, A, B>(
-    ta: Type2<W, WL, A>,
-    f: (a: A) => Type3<F, FU, FL, Option<B>>
-  ) => Type3<F, FU, FL, Type2<W, WL, B>>
-  <F extends URIS3, FU, FL>(F: Applicative3C<F, FU, FL>): <WL, A, B>(
-    ta: Type2<W, WL, A>,
-    f: (a: A) => Type3<F, FU, FL, Option<B>>
-  ) => Type3<F, FU, FL, Type2<W, WL, B>>
-  <F extends URIS2>(F: Applicative2<F>): <WL, FL, A, B>(
-    ta: Type2<W, WL, A>,
-    f: (a: A) => Type2<F, FL, Option<B>>
-  ) => Type2<F, FL, Type2<W, WL, B>>
-  <F extends URIS2, FL>(F: Applicative2C<F, FL>): <WL, A, B>(
-    ta: Type2<W, WL, A>,
-    f: (a: A) => Type2<F, FL, Option<B>>
-  ) => Type2<F, FL, Type2<W, WL, B>>
-  <F extends URIS>(F: Applicative1<F>): <WL, A, B>(
-    ta: Type2<W, WL, A>,
-    f: (a: A) => Type<F, Option<B>>
-  ) => Type<F, Type2<W, WL, B>>
-  <F>(F: Applicative<F>): <WL, A, B>(ta: Type2<W, WL, A>, f: (a: A) => HKT<F, Option<B>>) => HKT<F, Type2<W, WL, B>>
+  <F extends URIS3>(F: Applicative3<F>): <WE, A, R, FE, B>(
+    ta: Kind2<W, WE, A>,
+    f: (a: A) => Kind3<F, R, FE, Option<B>>
+  ) => Kind3<F, R, FE, Kind2<W, WE, B>>
+  <F extends URIS2>(F: Applicative2<F>): <WE, A, FE, B>(
+    ta: Kind2<W, WE, A>,
+    f: (a: A) => Kind2<F, FE, Option<B>>
+  ) => Kind2<F, FE, Kind2<W, WE, B>>
+  <F extends URIS2, FE>(F: Applicative2C<F, FE>): <WE, A, B>(
+    ta: Kind2<W, WE, A>,
+    f: (a: A) => Kind2<F, FE, Option<B>>
+  ) => Kind2<F, FE, Kind2<W, WE, B>>
+  <F extends URIS>(F: Applicative1<F>): <E, A, B>(
+    ta: Kind2<W, E, A>,
+    f: (a: A) => Kind<F, Option<B>>
+  ) => Kind<F, Kind2<W, E, B>>
+  <F>(F: Applicative<F>): <E, A, B>(ta: Kind2<W, E, A>, f: (a: A) => HKT<F, Option<B>>) => HKT<F, Kind2<W, E, B>>
 }
 
 /**
- * @see Wither
- * @since 1.7.0
+ * @since 2.0.0
  */
-export interface Wither2C<W extends URIS2, WL> {
-  <F extends URIS3>(F: Applicative3<F>): <FU, FL, A, B>(
-    ta: Type2<W, WL, A>,
-    f: (a: A) => Type3<F, FU, FL, Option<B>>
-  ) => Type3<F, FU, FL, Type2<W, WL, B>>
-  <F extends URIS3, FU, FL>(F: Applicative3C<F, FU, FL>): <A, B>(
-    ta: Type2<W, WL, A>,
-    f: (a: A) => Type3<F, FU, FL, Option<B>>
-  ) => Type3<F, FU, FL, Type2<W, WL, B>>
-  <F extends URIS2>(F: Applicative2<F>): <FL, A, B>(
-    ta: Type2<W, WL, A>,
-    f: (a: A) => Type2<F, FL, Option<B>>
-  ) => Type2<F, FL, Type2<W, WL, B>>
-  <F extends URIS2, FL>(F: Applicative2C<F, FL>): <A, B>(
-    ta: Type2<W, WL, A>,
-    f: (a: A) => Type2<F, FL, Option<B>>
-  ) => Type2<F, FL, Type2<W, WL, B>>
+export interface Wither2C<W extends URIS2, E> {
+  <F extends URIS3>(F: Applicative3<F>): <A, R, FE, B>(
+    ta: Kind2<W, E, A>,
+    f: (a: A) => Kind3<F, R, FE, Option<B>>
+  ) => Kind3<F, R, FE, Kind2<W, E, B>>
+  <F extends URIS2>(F: Applicative2<F>): <A, FE, B>(
+    ta: Kind2<W, E, A>,
+    f: (a: A) => Kind2<F, FE, Option<B>>
+  ) => Kind2<F, FE, Kind2<W, E, B>>
+  <F extends URIS2, FE>(F: Applicative2C<F, FE>): <A, B>(
+    ta: Kind2<W, E, A>,
+    f: (a: A) => Kind2<F, FE, Option<B>>
+  ) => Kind2<F, FE, Kind2<W, E, B>>
   <F extends URIS>(F: Applicative1<F>): <A, B>(
-    ta: Type2<W, WL, A>,
-    f: (a: A) => Type<F, Option<B>>
-  ) => Type<F, Type2<W, WL, B>>
-  <F>(F: Applicative<F>): <A, B>(ta: Type2<W, WL, A>, f: (a: A) => HKT<F, Option<B>>) => HKT<F, Type2<W, WL, B>>
+    ta: Kind2<W, E, A>,
+    f: (a: A) => Kind<F, Option<B>>
+  ) => Kind<F, Kind2<W, E, B>>
+  <F>(F: Applicative<F>): <A, B>(ta: Kind2<W, E, A>, f: (a: A) => HKT<F, Option<B>>) => HKT<F, Kind2<W, E, B>>
 }
 
 /**
- * @see Wither
- * @since 1.7.0
+ * @since 2.0.0
  */
 export interface Wither3<W extends URIS3> {
-  <F extends URIS3>(F: Applicative3<F>): <WU, WL, FU, FL, A, B>(
-    ta: Type3<W, WU, WL, A>,
-    f: (a: A) => Type3<F, FU, FL, Option<B>>
-  ) => Type3<F, FU, FL, Type3<W, WU, WL, B>>
-  <F extends URIS3, FU, FL>(F: Applicative3C<F, FU, FL>): <WU, WL, A, B>(
-    ta: Type3<W, WU, WL, A>,
-    f: (a: A) => Type3<F, FU, FL, Option<B>>
-  ) => Type3<F, FU, FL, Type3<W, WU, WL, B>>
-  <F extends URIS2>(F: Applicative2<F>): <WU, WL, FL, A, B>(
-    ta: Type3<W, WU, WL, A>,
-    f: (a: A) => Type2<F, FL, Option<B>>
-  ) => Type2<F, FL, Type3<W, WU, WL, B>>
-  <F extends URIS2, FL>(F: Applicative2C<F, FL>): <WU, WL, A, B>(
-    ta: Type3<W, WU, WL, A>,
-    f: (a: A) => Type2<F, FL, Option<B>>
-  ) => Type2<F, FL, Type3<W, WU, WL, B>>
-  <F extends URIS>(F: Applicative1<F>): <WU, WL, A, B>(
-    ta: Type3<W, WU, WL, A>,
-    f: (a: A) => Type<F, Option<B>>
-  ) => Type<F, Type3<W, WU, WL, B>>
-  <F>(F: Applicative<F>): <WU, WL, A, B>(
-    ta: Type3<W, WU, WL, A>,
+  <F extends URIS3>(F: Applicative3<F>): <WR, WE, A, FR, FE, B>(
+    ta: Kind3<W, WR, WE, A>,
+    f: (a: A) => Kind3<F, FR, FE, Option<B>>
+  ) => Kind3<F, FR, FE, Kind3<W, WR, WE, B>>
+  <F extends URIS2>(F: Applicative2<F>): <WR, WE, A, FE, B>(
+    ta: Kind3<W, WR, WE, A>,
+    f: (a: A) => Kind2<F, FE, Option<B>>
+  ) => Kind2<F, FE, Kind3<W, WR, WE, B>>
+  <F extends URIS2, FE>(F: Applicative2C<F, FE>): <R, WE, A, B>(
+    ta: Kind3<W, R, WE, A>,
+    f: (a: A) => Kind2<F, FE, Option<B>>
+  ) => Kind2<F, FE, Kind3<W, R, WE, B>>
+  <F extends URIS>(F: Applicative1<F>): <R, E, A, B>(
+    ta: Kind3<W, R, E, A>,
+    f: (a: A) => Kind<F, Option<B>>
+  ) => Kind<F, Kind3<W, R, E, B>>
+  <F>(F: Applicative<F>): <R, E, A, B>(
+    ta: Kind3<W, R, E, A>,
     f: (a: A) => HKT<F, Option<B>>
-  ) => HKT<F, Type3<W, WU, WL, B>>
+  ) => HKT<F, Kind3<W, R, E, B>>
 }
 
 /**
- * @see Wither
- * @since 1.7.0
- */
-export interface Wither3C<W extends URIS3, WU, WL> {
-  <F extends URIS3>(F: Applicative3<F>): <FU, FL, A, B>(
-    ta: Type3<W, WU, WL, A>,
-    f: (a: A) => Type3<F, FU, FL, Option<B>>
-  ) => Type3<F, FU, FL, Type3<W, WU, WL, B>>
-  <F extends URIS3, FU, FL>(F: Applicative3C<F, FU, FL>): <A, B>(
-    ta: Type3<W, WU, WL, A>,
-    f: (a: A) => Type3<F, FU, FL, Option<B>>
-  ) => Type3<F, FU, FL, Type3<W, WU, WL, B>>
-  <F extends URIS2>(F: Applicative2<F>): <FL, A, B>(
-    ta: Type3<W, WU, WL, A>,
-    f: (a: A) => Type2<F, FL, Option<B>>
-  ) => Type2<F, FL, Type3<W, WU, WL, B>>
-  <F extends URIS2, FL>(F: Applicative2C<F, FL>): <A, B>(
-    ta: Type3<W, WU, WL, A>,
-    f: (a: A) => Type2<F, FL, Option<B>>
-  ) => Type2<F, FL, Type3<W, WU, WL, B>>
-  <F extends URIS>(F: Applicative1<F>): <A, B>(
-    ta: Type3<W, WU, WL, A>,
-    f: (a: A) => Type<F, Option<B>>
-  ) => Type<F, Type3<W, WU, WL, B>>
-  <F>(F: Applicative<F>): <A, B>(ta: Type3<W, WU, WL, A>, f: (a: A) => HKT<F, Option<B>>) => HKT<F, Type3<W, WU, WL, B>>
-}
-
-/**
- * Interface for `Witherable.wilt`
- * @since 1.7.0
+ * @since 2.0.0
  */
 export interface Wilt<W> {
-  <F extends URIS3>(F: Applicative3<F>): <FU, FL, RL, RR, A>(
+  <F extends URIS3>(F: Applicative3<F>): <A, R, E, B, C>(
     wa: HKT<W, A>,
-    f: (a: A) => Type3<F, FU, FL, Either<RL, RR>>
-  ) => Type3<F, FU, FL, Separated<HKT<W, RL>, HKT<W, RR>>>
-  <F extends URIS3, FU, FL>(F: Applicative3C<F, FU, FL>): <RL, RR, A>(
+    f: (a: A) => Kind3<F, R, E, Either<B, C>>
+  ) => Kind3<F, R, E, Separated<HKT<W, B>, HKT<W, C>>>
+  <F extends URIS3, E>(F: Applicative3C<F, E>): <A, R, B, C>(
     wa: HKT<W, A>,
-    f: (a: A) => Type3<F, FU, FL, Either<RL, RR>>
-  ) => Type3<F, FU, FL, Separated<HKT<W, RL>, HKT<W, RR>>>
-  <F extends URIS2>(F: Applicative2<F>): <FL, RL, RR, A>(
+    f: (a: A) => Kind3<F, R, E, Either<B, C>>
+  ) => Kind3<F, R, E, Separated<HKT<W, B>, HKT<W, C>>>
+  <F extends URIS2>(F: Applicative2<F>): <A, E, B, C>(
     wa: HKT<W, A>,
-    f: (a: A) => Type2<F, FL, Either<RL, RR>>
-  ) => Type2<F, FL, Separated<HKT<W, RL>, HKT<W, RR>>>
-  <F extends URIS2, FL>(F: Applicative2C<F, FL>): <RL, RR, A>(
+    f: (a: A) => Kind2<F, E, Either<B, C>>
+  ) => Kind2<F, E, Separated<HKT<W, B>, HKT<W, C>>>
+  <F extends URIS2, E>(F: Applicative2C<F, E>): <A, B, C>(
     wa: HKT<W, A>,
-    f: (a: A) => Type2<F, FL, Either<RL, RR>>
-  ) => Type2<F, FL, Separated<HKT<W, RL>, HKT<W, RR>>>
-  <F extends URIS>(F: Applicative1<F>): <RL, RR, A>(
+    f: (a: A) => Kind2<F, E, Either<B, C>>
+  ) => Kind2<F, E, Separated<HKT<W, B>, HKT<W, C>>>
+  <F extends URIS>(F: Applicative1<F>): <A, B, C>(
     wa: HKT<W, A>,
-    f: (a: A) => Type<F, Either<RL, RR>>
-  ) => Type<F, Separated<HKT<W, RL>, HKT<W, RR>>>
-  <F>(F: Applicative<F>): <RL, RR, A>(
+    f: (a: A) => Kind<F, Either<B, C>>
+  ) => Kind<F, Separated<HKT<W, B>, HKT<W, C>>>
+  <F>(F: Applicative<F>): <A, B, C>(
     wa: HKT<W, A>,
-    f: (a: A) => HKT<F, Either<RL, RR>>
-  ) => HKT<F, Separated<HKT<W, RL>, HKT<W, RR>>>
+    f: (a: A) => HKT<F, Either<B, C>>
+  ) => HKT<F, Separated<HKT<W, B>, HKT<W, C>>>
 }
 
 /**
- * @see Wilt
- * @since 1.7.0
+ * @since 2.0.0
  */
 export interface Wilt1<W extends URIS> {
-  <F extends URIS3>(F: Applicative3<F>): <FU, FL, RL, RR, A>(
-    wa: Type<W, A>,
-    f: (a: A) => Type3<F, FU, FL, Either<RL, RR>>
-  ) => Type3<F, FU, FL, Separated<HKT<W, RL>, Type<W, RR>>>
-  <F extends URIS3, FU, FL>(F: Applicative3C<F, FU, FL>): <RL, RR, A>(
-    wa: Type<W, A>,
-    f: (a: A) => Type3<F, FU, FL, Either<RL, RR>>
-  ) => Type3<F, FU, FL, Separated<HKT<W, RL>, Type<W, RR>>>
-  <F extends URIS2>(F: Applicative2<F>): <FL, RL, RR, A>(
-    wa: Type<W, A>,
-    f: (a: A) => Type2<F, FL, Either<RL, RR>>
-  ) => Type2<F, FL, Separated<HKT<W, RL>, Type<W, RR>>>
-  <F extends URIS2, FL>(F: Applicative2C<F, FL>): <RL, RR, A>(
-    wa: Type<W, A>,
-    f: (a: A) => Type2<F, FL, Either<RL, RR>>
-  ) => Type2<F, FL, Separated<HKT<W, RL>, Type<W, RR>>>
-  <F extends URIS>(F: Applicative1<F>): <RL, RR, A>(
-    wa: Type<W, A>,
-    f: (a: A) => Type<F, Either<RL, RR>>
-  ) => Type<F, Separated<HKT<W, RL>, Type<W, RR>>>
-  <F>(F: Applicative<F>): <RL, RR, A>(
-    wa: Type<W, A>,
-    f: (a: A) => HKT<F, Either<RL, RR>>
-  ) => HKT<F, Separated<HKT<W, RL>, Type<W, RR>>>
+  <F extends URIS3>(F: Applicative3<F>): <A, R, E, B, C>(
+    wa: Kind<W, A>,
+    f: (a: A) => Kind3<F, R, E, Either<B, C>>
+  ) => Kind3<F, R, E, Separated<Kind<W, B>, Kind<W, C>>>
+  <F extends URIS3, E>(F: Applicative3C<F, E>): <A, R, B, C>(
+    wa: Kind<W, A>,
+    f: (a: A) => Kind3<F, R, E, Either<B, C>>
+  ) => Kind3<F, R, E, Separated<Kind<W, B>, Kind<W, C>>>
+  <F extends URIS2>(F: Applicative2<F>): <A, E, B, C>(
+    wa: Kind<W, A>,
+    f: (a: A) => Kind2<F, E, Either<B, C>>
+  ) => Kind2<F, E, Separated<Kind<W, B>, Kind<W, C>>>
+  <F extends URIS2, E>(F: Applicative2C<F, E>): <A, B, C>(
+    wa: Kind<W, A>,
+    f: (a: A) => Kind2<F, E, Either<B, C>>
+  ) => Kind2<F, E, Separated<Kind<W, B>, Kind<W, C>>>
+  <F extends URIS>(F: Applicative1<F>): <A, B, C>(
+    wa: Kind<W, A>,
+    f: (a: A) => Kind<F, Either<B, C>>
+  ) => Kind<F, Separated<Kind<W, B>, Kind<W, C>>>
+  <F>(F: Applicative<F>): <A, B, C>(
+    wa: Kind<W, A>,
+    f: (a: A) => HKT<F, Either<B, C>>
+  ) => HKT<F, Separated<Kind<W, B>, Kind<W, C>>>
 }
 
 /**
- * @see Wilt
- * @since 1.7.0
+ * @since 2.0.0
  */
 export interface Wilt2<W extends URIS2> {
-  <F extends URIS3>(F: Applicative3<F>): <WL, FU, FL, RL, RR, A>(
-    wa: Type2<W, WL, A>,
-    f: (a: A) => Type3<F, FU, FL, Either<RL, RR>>
-  ) => Type3<F, FU, FL, Separated<HKT<W, RL>, Type2<W, WL, RR>>>
-  <F extends URIS3, FU, FL>(F: Applicative3C<F, FU, FL>): <WL, RL, RR, A>(
-    wa: Type2<W, WL, A>,
-    f: (a: A) => Type3<F, FU, FL, Either<RL, RR>>
-  ) => Type3<F, FU, FL, Separated<HKT<W, RL>, Type2<W, WL, RR>>>
-  <F extends URIS2>(F: Applicative2<F>): <WL, FL, RL, RR, A>(
-    wa: Type2<W, WL, A>,
-    f: (a: A) => Type2<F, FL, Either<RL, RR>>
-  ) => Type2<F, FL, Separated<HKT<W, RL>, Type2<W, WL, RR>>>
-  <F extends URIS2, FL>(F: Applicative2C<F, FL>): <WL, RL, RR, A>(
-    wa: Type2<W, WL, A>,
-    f: (a: A) => Type2<F, FL, Either<RL, RR>>
-  ) => Type2<F, FL, Separated<HKT<W, RL>, Type2<W, WL, RR>>>
-  <F extends URIS>(F: Applicative1<F>): <WL, RL, RR, A>(
-    wa: Type2<W, WL, A>,
-    f: (a: A) => Type<F, Either<RL, RR>>
-  ) => Type<F, Separated<HKT<W, RL>, Type2<W, WL, RR>>>
-  <F>(F: Applicative<F>): <WL, RL, RR, A>(
-    wa: Type2<W, WL, A>,
-    f: (a: A) => HKT<F, Either<RL, RR>>
-  ) => HKT<F, Separated<HKT<W, RL>, Type2<W, WL, RR>>>
+  <F extends URIS3>(F: Applicative3<F>): <WE, A, R, FE, B, C>(
+    wa: Kind2<W, WE, A>,
+    f: (a: A) => Kind3<F, R, FE, Either<B, C>>
+  ) => Kind3<F, R, FE, Separated<Kind2<W, WE, B>, Kind2<W, WE, C>>>
+  <F extends URIS2>(F: Applicative2<F>): <WE, A, FE, B, C>(
+    wa: Kind2<W, WE, A>,
+    f: (a: A) => Kind2<F, FE, Either<B, C>>
+  ) => Kind2<F, FE, Separated<Kind2<W, WE, B>, Kind2<W, WE, C>>>
+  <F extends URIS2, FE>(F: Applicative2C<F, FE>): <WE, A, B, C>(
+    wa: Kind2<W, WE, A>,
+    f: (a: A) => Kind2<F, FE, Either<B, C>>
+  ) => Kind2<F, FE, Separated<Kind2<W, WE, B>, Kind2<W, WE, C>>>
+  <F extends URIS>(F: Applicative1<F>): <E, A, B, C>(
+    wa: Kind2<W, E, A>,
+    f: (a: A) => Kind<F, Either<B, C>>
+  ) => Kind<F, Separated<Kind2<W, E, B>, Kind2<W, E, C>>>
+  <F>(F: Applicative<F>): <E, A, B, C>(
+    wa: Kind2<W, E, A>,
+    f: (a: A) => HKT<F, Either<B, C>>
+  ) => HKT<F, Separated<Kind2<W, E, B>, Kind2<W, E, C>>>
 }
 
 /**
- * @see Wilt
- * @since 1.7.0
+ * @since 2.0.0
  */
-export interface Wilt2C<W extends URIS2, WL> {
-  <F extends URIS3>(F: Applicative3<F>): <FU, FL, RL, RR, A>(
-    wa: Type2<W, WL, A>,
-    f: (a: A) => Type3<F, FU, FL, Either<RL, RR>>
-  ) => Type3<F, FU, FL, Separated<HKT<W, RL>, Type2<W, WL, RR>>>
-  <F extends URIS3, FU, FL>(F: Applicative3C<F, FU, FL>): <RL, RR, A>(
-    wa: Type2<W, WL, A>,
-    f: (a: A) => Type3<F, FU, FL, Either<RL, RR>>
-  ) => Type3<F, FU, FL, Separated<HKT<W, RL>, Type2<W, WL, RR>>>
-  <F extends URIS2>(F: Applicative2<F>): <FL, RL, RR, A>(
-    wa: Type2<W, WL, A>,
-    f: (a: A) => Type2<F, FL, Either<RL, RR>>
-  ) => Type2<F, FL, Separated<HKT<W, RL>, Type2<W, WL, RR>>>
-  <F extends URIS2, FL>(F: Applicative2C<F, FL>): <RL, RR, A>(
-    wa: Type2<W, WL, A>,
-    f: (a: A) => Type2<F, FL, Either<RL, RR>>
-  ) => Type2<F, FL, Separated<HKT<W, RL>, Type2<W, WL, RR>>>
-  <F extends URIS>(F: Applicative1<F>): <RL, RR, A>(
-    wa: Type2<W, WL, A>,
-    f: (a: A) => Type<F, Either<RL, RR>>
-  ) => Type<F, Separated<HKT<W, RL>, Type2<W, WL, RR>>>
-  <F>(F: Applicative<F>): <RL, RR, A>(
-    wa: Type2<W, WL, A>,
-    f: (a: A) => HKT<F, Either<RL, RR>>
-  ) => HKT<F, Separated<HKT<W, RL>, Type2<W, WL, RR>>>
+export interface Wilt2C<W extends URIS2, E> {
+  <F extends URIS3>(F: Applicative3<F>): <A, R, FE, B, C>(
+    wa: Kind2<W, E, A>,
+    f: (a: A) => Kind3<F, R, FE, Either<B, C>>
+  ) => Kind3<F, R, FE, Separated<Kind2<W, E, B>, Kind2<W, E, C>>>
+  <F extends URIS2>(F: Applicative2<F>): <A, FE, B, C>(
+    wa: Kind2<W, E, A>,
+    f: (a: A) => Kind2<F, FE, Either<B, C>>
+  ) => Kind2<F, FE, Separated<Kind2<W, E, B>, Kind2<W, E, C>>>
+  <F extends URIS2, FE>(F: Applicative2C<F, FE>): <A, B, C>(
+    wa: Kind2<W, E, A>,
+    f: (a: A) => Kind2<F, FE, Either<B, C>>
+  ) => Kind2<F, FE, Separated<Kind2<W, E, B>, Kind2<W, E, C>>>
+  <F extends URIS>(F: Applicative1<F>): <A, B, C>(
+    wa: Kind2<W, E, A>,
+    f: (a: A) => Kind<F, Either<B, C>>
+  ) => Kind<F, Separated<Kind2<W, E, B>, Kind2<W, E, C>>>
+  <F>(F: Applicative<F>): <A, B, C>(
+    wa: Kind2<W, E, A>,
+    f: (a: A) => HKT<F, Either<B, C>>
+  ) => HKT<F, Separated<Kind2<W, E, B>, Kind2<W, E, C>>>
 }
 
 /**
- * @see Wilt
- * @since 1.7.0
+ * @since 2.0.0
  */
 export interface Wilt3<W extends URIS3> {
-  <F extends URIS3>(F: Applicative3<F>): <WU, WL, FU, FL, RL, RR, A>(
-    wa: Type3<W, WU, WL, A>,
-    f: (a: A) => Type3<F, FU, FL, Either<RL, RR>>
-  ) => Type3<F, FU, FL, Separated<HKT<W, RL>, Type3<W, WU, WL, RR>>>
-  <F extends URIS3, FU, FL>(F: Applicative3C<F, FU, FL>): <WU, WL, RL, RR, A>(
-    wa: Type3<W, WU, WL, A>,
-    f: (a: A) => Type3<F, FU, FL, Either<RL, RR>>
-  ) => Type3<F, FU, FL, Separated<HKT<W, RL>, Type3<W, WU, WL, RR>>>
-  <F extends URIS2>(F: Applicative2<F>): <WU, WL, FL, RL, RR, A>(
-    wa: Type3<W, WU, WL, A>,
-    f: (a: A) => Type2<F, FL, Either<RL, RR>>
-  ) => Type2<F, FL, Separated<HKT<W, RL>, Type3<W, WU, WL, RR>>>
-  <F extends URIS2, FL>(F: Applicative2C<F, FL>): <WU, WL, RL, RR, A>(
-    wa: Type3<W, WU, WL, A>,
-    f: (a: A) => Type2<F, FL, Either<RL, RR>>
-  ) => Type2<F, FL, Separated<HKT<W, RL>, Type3<W, WU, WL, RR>>>
-  <F extends URIS>(F: Applicative1<F>): <WU, WL, RL, RR, A>(
-    wa: Type3<W, WU, WL, A>,
-    f: (a: A) => Type<F, Either<RL, RR>>
-  ) => Type<F, Separated<HKT<W, RL>, Type3<W, WU, WL, RR>>>
-  <F>(F: Applicative<F>): <WU, WL, RL, RR, A>(
-    wa: Type3<W, WU, WL, A>,
-    f: (a: A) => HKT<F, Either<RL, RR>>
-  ) => HKT<F, Separated<HKT<W, RL>, Type3<W, WU, WL, RR>>>
+  <F extends URIS3>(F: Applicative3<F>): <WR, WE, A, FR, FE, B, C>(
+    wa: Kind3<W, WR, WE, A>,
+    f: (a: A) => Kind3<F, FR, FE, Either<B, C>>
+  ) => Kind3<F, FR, FE, Separated<Kind3<W, WR, WE, B>, Kind3<W, WR, WE, C>>>
+  <F extends URIS2>(F: Applicative2<F>): <R, WE, A, FE, B, C>(
+    wa: Kind3<W, R, WE, A>,
+    f: (a: A) => Kind2<F, FE, Either<B, C>>
+  ) => Kind2<F, FE, Separated<Kind3<W, R, WE, B>, Kind3<W, R, WE, C>>>
+  <F extends URIS2, FE>(F: Applicative2C<F, FE>): <R, WE, A, B, C>(
+    wa: Kind3<W, R, WE, A>,
+    f: (a: A) => Kind2<F, FE, Either<B, C>>
+  ) => Kind2<F, FE, Separated<Kind3<W, R, WE, B>, Kind3<W, R, WE, C>>>
+  <F extends URIS>(F: Applicative1<F>): <R, E, A, B, C>(
+    wa: Kind3<W, R, E, A>,
+    f: (a: A) => Kind<F, Either<B, C>>
+  ) => Kind<F, Separated<Kind3<W, R, E, B>, Kind3<W, R, E, C>>>
+  <F>(F: Applicative<F>): <R, E, A, B, C>(
+    wa: Kind3<W, R, E, A>,
+    f: (a: A) => HKT<F, Either<B, C>>
+  ) => HKT<F, Separated<Kind3<W, R, E, B>, Kind3<W, R, E, C>>>
+}
+
+//
+// pipeable `Wither`
+//
+
+/**
+ * @since 2.6.5
+ */
+export interface PipeableWither<W> {
+  <F extends URIS3>(F: Applicative3<F>): <A, R, E, B>(
+    f: (a: A) => Kind3<F, R, E, Option<B>>
+  ) => (ta: HKT<W, A>) => Kind3<F, R, E, HKT<W, B>>
+  <F extends URIS3, E>(F: Applicative3C<F, E>): <A, R, B>(
+    f: (a: A) => Kind3<F, R, E, Option<B>>
+  ) => (ta: HKT<W, A>) => Kind3<F, R, E, HKT<W, B>>
+  <F extends URIS2>(F: Applicative2<F>): <A, E, B>(
+    f: (a: A) => Kind2<F, E, Option<B>>
+  ) => (ta: HKT<W, A>) => Kind2<F, E, HKT<W, B>>
+  <F extends URIS2, E>(F: Applicative2C<F, E>): <A, B>(
+    f: (a: A) => Kind2<F, E, Option<B>>
+  ) => (ta: HKT<W, A>) => Kind2<F, E, HKT<W, B>>
+  <F extends URIS>(F: Applicative1<F>): <A, B>(f: (a: A) => Kind<F, Option<B>>) => (ta: HKT<W, A>) => Kind<F, HKT<W, B>>
+  <F>(F: Applicative<F>): <A, B>(f: (a: A) => HKT<F, Option<B>>) => (ta: HKT<W, A>) => HKT<F, HKT<W, B>>
 }
 
 /**
- * @see Wilt
- * @since 1.7.0
+ * @since 2.6.5
  */
-export interface Wilt3C<W extends URIS3, WU, WL> {
-  <F extends URIS3>(F: Applicative3<F>): <FU, FL, RL, RR, A>(
-    wa: Type3<W, WU, WL, A>,
-    f: (a: A) => Type3<F, FU, FL, Either<RL, RR>>
-  ) => Type3<F, FU, FL, Separated<HKT<W, RL>, Type3<W, WU, WL, RR>>>
-  <F extends URIS3, FU, FL>(F: Applicative3C<F, FU, FL>): <RL, RR, A>(
-    wa: Type3<W, WU, WL, A>,
-    f: (a: A) => Type3<F, FU, FL, Either<RL, RR>>
-  ) => Type3<F, FU, FL, Separated<HKT<W, RL>, Type3<W, WU, WL, RR>>>
-  <F extends URIS2>(F: Applicative2<F>): <FL, RL, RR, A>(
-    wa: Type3<W, WU, WL, A>,
-    f: (a: A) => Type2<F, FL, Either<RL, RR>>
-  ) => Type2<F, FL, Separated<HKT<W, RL>, Type3<W, WU, WL, RR>>>
-  <F extends URIS2, FL>(F: Applicative2C<F, FL>): <RL, RR, A>(
-    wa: Type3<W, WU, WL, A>,
-    f: (a: A) => Type2<F, FL, Either<RL, RR>>
-  ) => Type2<F, FL, Separated<HKT<W, RL>, Type3<W, WU, WL, RR>>>
-  <F extends URIS>(F: Applicative1<F>): <RL, RR, A>(
-    wa: Type3<W, WU, WL, A>,
-    f: (a: A) => Type<F, Either<RL, RR>>
-  ) => Type<F, Separated<HKT<W, RL>, Type3<W, WU, WL, RR>>>
-  <F>(F: Applicative<F>): <RL, RR, A>(
-    wa: Type3<W, WU, WL, A>,
-    f: (a: A) => HKT<F, Either<RL, RR>>
-  ) => HKT<F, Separated<HKT<W, RL>, Type3<W, WU, WL, RR>>>
+export interface PipeableWither1<W extends URIS> {
+  <F extends URIS3>(F: Applicative3<F>): <A, R, E, B>(
+    f: (a: A) => Kind3<F, R, E, Option<B>>
+  ) => (ta: Kind<W, A>) => Kind3<F, R, E, Kind<W, B>>
+  <F extends URIS3, E>(F: Applicative3C<F, E>): <A, R, B>(
+    f: (a: A) => Kind3<F, R, E, Option<B>>
+  ) => (ta: Kind<W, A>) => Kind3<F, R, E, Kind<W, B>>
+  <F extends URIS2>(F: Applicative2<F>): <A, E, B>(
+    f: (a: A) => Kind2<F, E, Option<B>>
+  ) => (ta: Kind<W, A>) => Kind2<F, E, Kind<W, B>>
+  <F extends URIS2, E>(F: Applicative2C<F, E>): <A, B>(
+    f: (a: A) => Kind2<F, E, Option<B>>
+  ) => (ta: Kind<W, A>) => Kind2<F, E, Kind<W, B>>
+  <F extends URIS>(F: Applicative1<F>): <A, B>(
+    f: (a: A) => Kind<F, Option<B>>
+  ) => (ta: Kind<W, A>) => Kind<F, Kind<W, B>>
+  <F>(F: Applicative<F>): <A, B>(f: (a: A) => HKT<F, Option<B>>) => (ta: Kind<W, A>) => HKT<F, Kind<W, B>>
+}
+
+/**
+ * @since 2.6.5
+ */
+export interface PipeableWither2<W extends URIS2> {
+  <F extends URIS3>(F: Applicative3<F>): <A, R, FE, B>(
+    f: (a: A) => Kind3<F, R, FE, Option<B>>
+  ) => <WE>(ta: Kind2<W, WE, A>) => Kind3<F, R, FE, Kind2<W, WE, B>>
+  <F extends URIS2>(F: Applicative2<F>): <A, FE, B>(
+    f: (a: A) => Kind2<F, FE, Option<B>>
+  ) => <WE>(ta: Kind2<W, WE, A>) => Kind2<F, FE, Kind2<W, WE, B>>
+  <F extends URIS2, FE>(F: Applicative2C<F, FE>): <A, B>(
+    f: (a: A) => Kind2<F, FE, Option<B>>
+  ) => <WE>(ta: Kind2<W, WE, A>) => Kind2<F, FE, Kind2<W, WE, B>>
+  <F extends URIS>(F: Applicative1<F>): <A, B>(
+    f: (a: A) => Kind<F, Option<B>>
+  ) => <WE>(ta: Kind2<W, WE, A>) => Kind<F, Kind2<W, WE, B>>
+  <F>(F: Applicative<F>): <A, B>(f: (a: A) => HKT<F, Option<B>>) => <WE>(ta: Kind2<W, WE, A>) => HKT<F, Kind2<W, WE, B>>
+}
+
+/**
+ * @since 2.6.5
+ */
+export interface PipeableWither2C<W extends URIS2, WE> {
+  <F extends URIS3>(F: Applicative3<F>): <A, R, FE, B>(
+    f: (a: A) => Kind3<F, R, FE, Option<B>>
+  ) => (ta: Kind2<W, WE, A>) => Kind3<F, R, FE, Kind2<W, WE, B>>
+  <F extends URIS2>(F: Applicative2<F>): <A, FE, B>(
+    f: (a: A) => Kind2<F, FE, Option<B>>
+  ) => (ta: Kind2<W, WE, A>) => Kind2<F, FE, Kind2<W, WE, B>>
+  <F extends URIS2, FE>(F: Applicative2C<F, FE>): <A, B>(
+    f: (a: A) => Kind2<F, FE, Option<B>>
+  ) => (ta: Kind2<W, WE, A>) => Kind2<F, FE, Kind2<W, WE, B>>
+  <F extends URIS>(F: Applicative1<F>): <A, B>(
+    f: (a: A) => Kind<F, Option<B>>
+  ) => (ta: Kind2<W, WE, A>) => Kind<F, Kind2<W, WE, B>>
+  <F>(F: Applicative<F>): <A, B>(f: (a: A) => HKT<F, Option<B>>) => (ta: Kind2<W, WE, A>) => HKT<F, Kind2<W, WE, B>>
+}
+
+/**
+ * @since 2.6.5
+ */
+export interface PipeableWither3<W extends URIS3> {
+  <F extends URIS3>(F: Applicative3<F>): <A, FR, FE, B>(
+    f: (a: A) => Kind3<F, FR, FE, Option<B>>
+  ) => <WR, WE>(ta: Kind3<W, WR, WE, A>) => Kind3<F, FR, FE, Kind3<W, WR, WE, B>>
+  <F extends URIS2>(F: Applicative2<F>): <A, FE, B>(
+    f: (a: A) => Kind2<F, FE, Option<B>>
+  ) => <WR, WE>(ta: Kind3<W, WR, WE, A>) => Kind2<F, FE, Kind3<W, WR, WE, B>>
+  <F extends URIS2, FE>(F: Applicative2C<F, FE>): <A, B>(
+    f: (a: A) => Kind2<F, FE, Option<B>>
+  ) => <WR, WE>(ta: Kind3<W, WR, WE, A>) => Kind2<F, FE, Kind3<W, WR, WE, B>>
+  <F extends URIS>(F: Applicative1<F>): <A, B>(
+    f: (a: A) => Kind<F, Option<B>>
+  ) => <WR, WE>(ta: Kind3<W, WR, WE, A>) => Kind<F, Kind3<W, WR, WE, B>>
+  <F>(F: Applicative<F>): <A, B>(
+    f: (a: A) => HKT<F, Option<B>>
+  ) => <WR, WE>(ta: Kind3<W, WR, WE, A>) => HKT<F, Kind3<W, WR, WE, B>>
+}
+
+//
+// pipeable `Wilt`
+//
+
+/**
+ * @since 2.6.5
+ */
+export interface PipeableWilt<W> {
+  <F extends URIS3>(F: Applicative3<F>): <A, R, E, B, C>(
+    f: (a: A) => Kind3<F, R, E, Either<B, C>>
+  ) => (wa: HKT<W, A>) => Kind3<F, R, E, Separated<HKT<W, B>, HKT<W, C>>>
+  <F extends URIS3, E>(F: Applicative3C<F, E>): <A, R, B, C>(
+    f: (a: A) => Kind3<F, R, E, Either<B, C>>
+  ) => (wa: HKT<W, A>) => Kind3<F, R, E, Separated<HKT<W, B>, HKT<W, C>>>
+  <F extends URIS2>(F: Applicative2<F>): <A, E, B, C>(
+    f: (a: A) => Kind2<F, E, Either<B, C>>
+  ) => (wa: HKT<W, A>) => Kind2<F, E, Separated<HKT<W, B>, HKT<W, C>>>
+  <F extends URIS2, E>(F: Applicative2C<F, E>): <A, B, C>(
+    f: (a: A) => Kind2<F, E, Either<B, C>>
+  ) => (wa: HKT<W, A>) => Kind2<F, E, Separated<HKT<W, B>, HKT<W, C>>>
+  <F extends URIS>(F: Applicative1<F>): <A, B, C>(
+    f: (a: A) => Kind<F, Either<B, C>>
+  ) => (wa: HKT<W, A>) => Kind<F, Separated<HKT<W, B>, HKT<W, C>>>
+  <F>(F: Applicative<F>): <A, B, C>(
+    f: (a: A) => HKT<F, Either<B, C>>
+  ) => (wa: HKT<W, A>) => HKT<F, Separated<HKT<W, B>, HKT<W, C>>>
+}
+
+/**
+ * @since 2.6.5
+ */
+export interface PipeableWilt1<W extends URIS> {
+  <F extends URIS3>(F: Applicative3<F>): <A, R, E, B, C>(
+    f: (a: A) => Kind3<F, R, E, Either<B, C>>
+  ) => (wa: Kind<W, A>) => Kind3<F, R, E, Separated<Kind<W, B>, Kind<W, C>>>
+  <F extends URIS3, E>(F: Applicative3C<F, E>): <A, R, B, C>(
+    f: (a: A) => Kind3<F, R, E, Either<B, C>>
+  ) => (wa: Kind<W, A>) => Kind3<F, R, E, Separated<Kind<W, B>, Kind<W, C>>>
+  <F extends URIS2>(F: Applicative2<F>): <A, E, B, C>(
+    f: (a: A) => Kind2<F, E, Either<B, C>>
+  ) => (wa: Kind<W, A>) => Kind2<F, E, Separated<Kind<W, B>, Kind<W, C>>>
+  <F extends URIS2, E>(F: Applicative2C<F, E>): <A, B, C>(
+    f: (a: A) => Kind2<F, E, Either<B, C>>
+  ) => (wa: Kind<W, A>) => Kind2<F, E, Separated<Kind<W, B>, Kind<W, C>>>
+  <F extends URIS>(F: Applicative1<F>): <A, B, C>(
+    f: (a: A) => Kind<F, Either<B, C>>
+  ) => (wa: Kind<W, A>) => Kind<F, Separated<Kind<W, B>, Kind<W, C>>>
+  <F>(F: Applicative<F>): <A, B, C>(
+    f: (a: A) => HKT<F, Either<B, C>>
+  ) => (wa: Kind<W, A>) => HKT<F, Separated<Kind<W, B>, Kind<W, C>>>
+}
+
+/**
+ * @since 2.6.5
+ */
+export interface PipeableWilt2<W extends URIS2> {
+  <F extends URIS3>(F: Applicative3<F>): <A, R, FE, B, C>(
+    f: (a: A) => Kind3<F, R, FE, Either<B, C>>
+  ) => <WE>(wa: Kind2<W, WE, A>) => Kind3<F, R, FE, Separated<Kind2<W, WE, B>, Kind2<W, WE, C>>>
+  <F extends URIS2>(F: Applicative2<F>): <A, FE, B, C>(
+    f: (a: A) => Kind2<F, FE, Either<B, C>>
+  ) => <WE>(wa: Kind2<W, WE, A>) => Kind2<F, FE, Separated<Kind2<W, WE, B>, Kind2<W, WE, C>>>
+  <F extends URIS2, FE>(F: Applicative2C<F, FE>): <A, B, C>(
+    f: (a: A) => Kind2<F, FE, Either<B, C>>
+  ) => <WE>(wa: Kind2<W, WE, A>) => Kind2<F, FE, Separated<Kind2<W, WE, B>, Kind2<W, WE, C>>>
+  <F extends URIS>(F: Applicative1<F>): <A, B, C>(
+    f: (a: A) => Kind<F, Either<B, C>>
+  ) => <WE>(wa: Kind2<W, WE, A>) => Kind<F, Separated<Kind2<W, WE, B>, Kind2<W, WE, C>>>
+  <F>(F: Applicative<F>): <A, B, C>(
+    f: (a: A) => HKT<F, Either<B, C>>
+  ) => <WE>(wa: Kind2<W, WE, A>) => HKT<F, Separated<Kind2<W, WE, B>, Kind2<W, WE, C>>>
+}
+
+/**
+ * @since 2.6.5
+ */
+export interface PipeableWilt2C<W extends URIS2, WE> {
+  <F extends URIS3>(F: Applicative3<F>): <A, R, FE, B, C>(
+    f: (a: A) => Kind3<F, R, FE, Either<B, C>>
+  ) => (wa: Kind2<W, WE, A>) => Kind3<F, R, FE, Separated<Kind2<W, WE, B>, Kind2<W, WE, C>>>
+  <F extends URIS2>(F: Applicative2<F>): <A, FE, B, C>(
+    f: (a: A) => Kind2<F, FE, Either<B, C>>
+  ) => (wa: Kind2<W, WE, A>) => Kind2<F, FE, Separated<Kind2<W, WE, B>, Kind2<W, WE, C>>>
+  <F extends URIS2, FE>(F: Applicative2C<F, FE>): <A, B, C>(
+    f: (a: A) => Kind2<F, FE, Either<B, C>>
+  ) => (wa: Kind2<W, WE, A>) => Kind2<F, FE, Separated<Kind2<W, WE, B>, Kind2<W, WE, C>>>
+  <F extends URIS>(F: Applicative1<F>): <A, B, C>(
+    f: (a: A) => Kind<F, Either<B, C>>
+  ) => (wa: Kind2<W, WE, A>) => Kind<F, Separated<Kind2<W, WE, B>, Kind2<W, WE, C>>>
+  <F>(F: Applicative<F>): <A, B, C>(
+    f: (a: A) => HKT<F, Either<B, C>>
+  ) => (wa: Kind2<W, WE, A>) => HKT<F, Separated<Kind2<W, WE, B>, Kind2<W, WE, C>>>
+}
+
+/**
+ * @since 2.6.5
+ */
+export interface PipeableWilt3<W extends URIS3> {
+  <F extends URIS3>(F: Applicative3<F>): <A, FR, FE, B, C>(
+    f: (a: A) => Kind3<F, FR, FE, Either<B, C>>
+  ) => <WR, WE>(wa: Kind3<W, WR, WE, A>) => Kind3<F, FR, FE, Separated<Kind3<W, WR, WE, B>, Kind3<W, WR, WE, C>>>
+  <F extends URIS2>(F: Applicative2<F>): <A, FE, B, C>(
+    f: (a: A) => Kind2<F, FE, Either<B, C>>
+  ) => <WR, WE>(wa: Kind3<W, WR, WE, A>) => Kind2<F, FE, Separated<Kind3<W, WR, WE, B>, Kind3<W, WR, WE, C>>>
+  <F extends URIS2, FE>(F: Applicative2C<F, FE>): <A, B, C>(
+    f: (a: A) => Kind2<F, FE, Either<B, C>>
+  ) => <WR, WE>(wa: Kind3<W, WR, WE, A>) => Kind2<F, FE, Separated<Kind3<W, WR, WE, B>, Kind3<W, WR, WE, C>>>
+  <F extends URIS>(F: Applicative1<F>): <A, B, C>(
+    f: (a: A) => Kind<F, Either<B, C>>
+  ) => <WR, WE>(wa: Kind3<W, WR, WE, A>) => Kind<F, Separated<Kind3<W, WR, WE, B>, Kind3<W, WR, WE, C>>>
+  <F>(F: Applicative<F>): <A, B, C>(
+    f: (a: A) => HKT<F, Either<B, C>>
+  ) => <WR, WE>(wa: Kind3<W, WR, WE, A>) => HKT<F, Separated<Kind3<W, WR, WE, B>, Kind3<W, WR, WE, C>>>
 }

@@ -1,5 +1,3 @@
-import { Ord, ordNumber } from './Ord'
-
 /**
  * The `Bounded` type class represents totally ordered types that have an upper and lower boundary.
  *
@@ -7,8 +5,13 @@ import { Ord, ordNumber } from './Ord'
  *
  * - Bounded: `bottom <= a <= top`
  *
- * @typeclass
- * @since 1.0.0
+ * @since 2.0.0
+ */
+import { Ord, ordNumber } from './Ord'
+
+/**
+ * @category type classes
+ * @since 2.0.0
  */
 export interface Bounded<A> extends Ord<A> {
   readonly top: A
@@ -16,11 +19,12 @@ export interface Bounded<A> extends Ord<A> {
 }
 
 /**
- * @instance
- * @since 1.0.0
+ * @category instances
+ * @since 2.0.0
  */
 export const boundedNumber: Bounded<number> = {
-  ...ordNumber,
+  equals: ordNumber.equals,
+  compare: ordNumber.compare,
   top: Infinity,
   bottom: -Infinity
 }

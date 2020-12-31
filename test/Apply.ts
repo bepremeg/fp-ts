@@ -1,75 +1,118 @@
 import * as assert from 'assert'
-import { applyFirst, applySecond, liftA2, liftA3, liftA4, sequenceT } from '../src/Apply'
-import { either, left, right } from '../src/Either'
-import { none, option, some } from '../src/Option'
+import { sequenceS, sequenceT } from '../src/Apply'
+import * as A from '../src/ReadonlyArray'
+import * as E from '../src/Either'
+import * as O from '../src/Option'
+import { pipe } from '../src/function'
 
 describe('Apply', () => {
-  const r1 = right<string, number>(1)
-  const r2 = right<string, number>(2)
-  const foo = left<string, number>('foo')
-  const bar = left<string, number>('bar')
+  it('sequenceT', () => {
+    const sequenceTOption = sequenceT(O.Applicative)
+    assert.deepStrictEqual(sequenceTOption(O.some(1)), O.some([1]))
+    assert.deepStrictEqual(sequenceTOption(O.some(1), O.some('a')), O.some([1, 'a']))
+    assert.deepStrictEqual(sequenceTOption(O.some(1), O.some('a'), O.some(true)), O.some([1, 'a', true]))
+    assert.deepStrictEqual(sequenceTOption(O.some(1), O.some('a'), O.some(true), O.some(2)), O.some([1, 'a', true, 2]))
+    assert.deepStrictEqual(
+      sequenceTOption(O.some(1), O.some('a'), O.some(true), O.some(2), O.some('b')),
+      O.some([1, 'a', true, 2, 'b'])
+    )
+    assert.deepStrictEqual(
+      sequenceTOption(O.some(1), O.some('a'), O.some(true), O.some(2), O.some('b'), O.some(false)),
+      O.some([1, 'a', true, 2, 'b', false])
+    )
+    assert.deepStrictEqual(sequenceTOption(O.some(1), O.some('a'), O.none), O.none)
 
-  it('applyFirst', () => {
-    assert.deepEqual(applyFirst(option)(some(5), some(6)), some(5))
-    assert.deepEqual(applyFirst(option)(some(5), none), none)
-    assert.deepEqual(applyFirst(option)(none, some(6)), none)
-
-    assert.deepEqual(applyFirst(either)(r1, r2), r1)
-    assert.deepEqual(applyFirst(either)(foo, r1), foo)
-    assert.deepEqual(applyFirst(either)(r1, foo), foo)
-    assert.deepEqual(applyFirst(either)(foo, bar), foo)
-  })
-
-  it('applySecond', () => {
-    assert.deepEqual(applySecond(option)(some(5), some(6)), some(6))
-    assert.deepEqual(applySecond(option)(some(5), none), none)
-    assert.deepEqual(applySecond(option)(none, some(6)), none)
-
-    assert.deepEqual(applySecond(either)(r1, r2), r2)
-    assert.deepEqual(applySecond(either)(foo, r1), foo)
-    assert.deepEqual(applySecond(either)(r1, foo), foo)
-    assert.deepEqual(applySecond(either)(foo, bar), foo)
-  })
-
-  it('liftA2', () => {
-    const f = (a: number) => (b: number) => a + b
-    assert.deepEqual(liftA2(option)(f)(some(2))(some(3)), some(5))
-    assert.deepEqual(liftA2(either)(f)(r2)(right(3)), right(5))
-  })
-
-  it('liftA3', () => {
-    const f = (a: number) => (b: number) => (c: number) => a + b + c
-    assert.deepEqual(liftA3(option)(f)(some(2))(some(3))(some(4)), some(9))
-    assert.deepEqual(liftA3(either)(f)(r2)(right(3))(right(4)), right(9))
-  })
-
-  it('liftA4', () => {
-    const f = (a: number) => (b: number) => (c: number) => (d: number) => a + b + c + d
-    const optionf = liftA4(option)(f)
-    assert.deepEqual(optionf(some(2))(some(3))(some(4))(some(5)), some(14))
-    const eitherf = liftA4(either)(f)
-    assert.deepEqual(eitherf(r2)(right(3))(right(4))(right(5)), right(14))
-  })
-
-  it('ap_', () => {
-    const f = (a: number) => (b: number) => a + b
-    assert.deepEqual(
-      option
-        .of(f)
-        .ap_(some(2))
-        .ap_(some(3)),
-      some(5)
+    // #914
+    const a1: ReadonlyArray<number> = [1, 2, 3]
+    const a2: ReadonlyArray<string> = ['a', 'b', 'c']
+    const a3: ReadonlyArray<boolean> = [true, false]
+    assert.deepStrictEqual(
+      pipe(sequenceT(A.Applicative)(a1, a2, a3), (arr) => arr.map(([x, y, z]) => `(${x}, ${y}, ${z})`)),
+      [
+        '(1, a, true)',
+        '(1, a, false)',
+        '(1, b, true)',
+        '(1, b, false)',
+        '(1, c, true)',
+        '(1, c, false)',
+        '(2, a, true)',
+        '(2, a, false)',
+        '(2, b, true)',
+        '(2, b, false)',
+        '(2, c, true)',
+        '(2, c, false)',
+        '(3, a, true)',
+        '(3, a, false)',
+        '(3, b, true)',
+        '(3, b, false)',
+        '(3, c, true)',
+        '(3, c, false)'
+      ]
     )
   })
 
-  it('sequenceT', () => {
-    const sequenceTOption = sequenceT(option)
-    const sequenceTEither = sequenceT(either)
-    assert.deepEqual(sequenceTOption(some(1)), some([1]))
-    assert.deepEqual(sequenceTOption(some(1), some('2')), some([1, '2']))
-    assert.deepEqual(sequenceTOption(some(1), some('2'), none), none)
-    assert.deepEqual(sequenceTEither(right(1)), right([1]))
-    assert.deepEqual(sequenceTEither(right(1), right('2')), right([1, '2']))
-    assert.deepEqual(sequenceTEither(right(1), right('2'), left('foo')), left('foo'))
+  it('sequenceS', () => {
+    const adoOption = sequenceS(O.Applicative)
+    assert.deepStrictEqual(adoOption({ a: O.some(1) }), O.some({ a: 1 }))
+    assert.deepStrictEqual(adoOption({ a: O.some(1), b: O.some('a') }), O.some({ a: 1, b: 'a' }))
+    assert.deepStrictEqual(
+      adoOption({ a: O.some(1), b: O.some('a'), c: O.some(true) }),
+      O.some({ a: 1, b: 'a', c: true })
+    )
+    assert.deepStrictEqual(
+      adoOption({ a: O.some(1), b: O.some('a'), c: O.some(true), d: O.some(2) }),
+      O.some({ a: 1, b: 'a', c: true, d: 2 })
+    )
+    assert.deepStrictEqual(
+      adoOption({ a: O.some(1), b: O.some('a'), c: O.some(true), d: O.some(2), e: O.some('b') }),
+      O.some({ a: 1, b: 'a', c: true, d: 2, e: 'b' })
+    )
+    assert.deepStrictEqual(
+      adoOption({ a: O.some(1), b: O.some('a'), c: O.some(true), d: O.some(2), e: O.some('b'), f: O.some(false) }),
+      O.some({ a: 1, b: 'a', c: true, d: 2, e: 'b', f: false })
+    )
+    assert.deepStrictEqual(adoOption({ a: O.some(1), b: O.none }), O.none)
+
+    const adoEither = sequenceS(E.Applicative)
+    assert.deepStrictEqual(adoEither({ a: E.right(1) }), E.right({ a: 1 }))
+    assert.deepStrictEqual(adoEither({ a: E.right(1), b: E.right(2) }), E.right({ a: 1, b: 2 }))
+    assert.deepStrictEqual(adoEither({ a: E.right(1), b: E.left('error') }), E.left('error'))
+
+    const adoValidation = sequenceS(E.getApplicativeValidation(A.getMonoid<string>()))
+    assert.deepStrictEqual(adoValidation({ a: E.right(1) }), E.right({ a: 1 }))
+    assert.deepStrictEqual(adoValidation({ a: E.right(1), b: E.right(2) }), E.right({ a: 1, b: 2 }))
+    assert.deepStrictEqual(adoValidation({ a: E.right(1), b: E.left(['error']) }), E.left(['error']))
+    assert.deepStrictEqual(
+      adoValidation({ a: E.left(['error1']), b: E.left(['error2']) }),
+      E.left(['error1', 'error2'])
+    )
+
+    // #914
+    const a1: ReadonlyArray<number> = [1, 2, 3]
+    const a2: ReadonlyArray<string> = ['a', 'b', 'c']
+    const a3: ReadonlyArray<boolean> = [true, false]
+    assert.deepStrictEqual(
+      pipe(sequenceS(A.Applicative)({ a1, a2, a3 }), (arr) => arr.map(({ a1, a2, a3 }) => `(${a1}, ${a2}, ${a3})`)),
+      [
+        '(1, a, true)',
+        '(1, a, false)',
+        '(1, b, true)',
+        '(1, b, false)',
+        '(1, c, true)',
+        '(1, c, false)',
+        '(2, a, true)',
+        '(2, a, false)',
+        '(2, b, true)',
+        '(2, b, false)',
+        '(2, c, true)',
+        '(2, c, false)',
+        '(3, a, true)',
+        '(3, a, false)',
+        '(3, b, true)',
+        '(3, b, false)',
+        '(3, c, true)',
+        '(3, c, false)'
+      ]
+    )
   })
 })

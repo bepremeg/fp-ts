@@ -1,103 +1,244 @@
+/**
+ * The `Const` type constructor, which wraps its first type argument and ignores its second.
+ * That is, `Const<E, A>` is isomorphic to `E` for any `A`.
+ *
+ * `Const` has some useful instances. For example, the `Applicative` instance allows us to collect results using a `Monoid`
+ * while ignoring return values.
+ *
+ * @since 2.0.0
+ */
 import { Applicative2C } from './Applicative'
 import { Apply2C } from './Apply'
+import { Bifunctor2 } from './Bifunctor'
+import { BooleanAlgebra } from './BooleanAlgebra'
+import { Bounded } from './Bounded'
 import { Contravariant2 } from './Contravariant'
+import { Eq } from './Eq'
+import { identity, pipe, unsafeCoerce } from './function'
 import { Functor2 } from './Functor'
+import { HeytingAlgebra } from './HeytingAlgebra'
 import { Monoid } from './Monoid'
+import { Ord } from './Ord'
+import { Ring } from './Ring'
 import { Semigroup } from './Semigroup'
-import { Setoid } from './Setoid'
-import { phantom, toString } from './function'
+import { Semiring } from './Semiring'
+import { Show } from './Show'
 
-declare module './HKT' {
-  interface URI2HKT2<L, A> {
-    Const: Const<L, A>
-  }
-}
-
-export const URI = 'Const'
-
-export type URI = typeof URI
+// -------------------------------------------------------------------------------------
+// model
+// -------------------------------------------------------------------------------------
 
 /**
- * @data
- * @constructor Const
- * @since 1.0.0
+ * @category model
+ * @since 2.0.0
  */
-export class Const<L, A> {
-  readonly _A!: A
-  readonly _L!: L
-  readonly _URI!: URI
-  constructor(readonly value: L) {}
-  map<B>(f: (a: A) => B): Const<L, B> {
-    return this as any
-  }
-  contramap<B>(f: (b: B) => A): Const<L, B> {
-    return this as any
-  }
-  fold<B>(f: (l: L) => B): B {
-    return f(this.value)
-  }
-  inspect(): string {
-    return this.toString()
-  }
-  toString(): string {
-    return `new Const(${toString(this.value)})`
+export type Const<E, A> = E & { readonly _A: A }
+
+/**
+ * @category constructors
+ * @since 2.0.0
+ */
+export const make: <E, A = never>(e: E) => Const<E, A> = unsafeCoerce
+
+/**
+ * @category instances
+ * @since 2.0.0
+ */
+export function getShow<E, A>(S: Show<E>): Show<Const<E, A>> {
+  return {
+    show: (c) => `make(${S.show(c)})`
   }
 }
 
 /**
- * @function
- * @since 1.0.0
+ * @category instances
+ * @since 2.0.0
  */
-export const getSetoid = <L, A>(S: Setoid<L>): Setoid<Const<L, A>> => ({
-  equals: (x, y) => S.equals(x.value, y.value)
-})
-
-const map = <L, A, B>(fa: Const<L, A>, f: (a: A) => B): Const<L, B> => {
-  return fa.map(f)
-}
-
-const contramap = <L, A, B>(fa: Const<L, A>, f: (b: B) => A): Const<L, B> => {
-  return fa.contramap(f)
-}
-
-const ap = <L>(S: Semigroup<L>) => <A, B>(fab: Const<L, (a: A) => B>, fa: Const<L, A>): Const<L, B> => {
-  return new Const(S.concat(fab.value, fa.value))
-}
+export const getEq: <E, A>(E: Eq<E>) => Eq<Const<E, A>> = identity
 
 /**
- * @function
- * @since 1.0.0
+ * @category instances
+ * @since 2.6.0
  */
-export const getApply = <L>(S: Semigroup<L>): Apply2C<URI, L> => {
+export const getOrd: <E, A>(O: Ord<E>) => Ord<Const<E, A>> = identity
+
+/**
+ * @category instances
+ * @since 2.6.0
+ */
+export const getBounded: <E, A>(B: Bounded<E>) => Bounded<Const<E, A>> = identity as any
+
+/**
+ * @category instances
+ * @since 2.6.0
+ */
+export const getSemigroup: <E, A>(S: Semigroup<E>) => Semigroup<Const<E, A>> = identity as any
+
+/**
+ * @category instances
+ * @since 2.6.0
+ */
+export const getMonoid: <E, A>(M: Monoid<E>) => Monoid<Const<E, A>> = identity as any
+
+/**
+ * @category instances
+ * @since 2.6.0
+ */
+export const getSemiring: <E, A>(S: Semiring<E>) => Semiring<Const<E, A>> = identity as any
+
+/**
+ * @category instances
+ * @since 2.6.0
+ */
+export const getRing: <E, A>(S: Ring<E>) => Ring<Const<E, A>> = identity as any
+
+/**
+ * @category instances
+ * @since 2.6.0
+ */
+export const getHeytingAlgebra: <E, A>(H: HeytingAlgebra<E>) => HeytingAlgebra<Const<E, A>> = identity as any
+
+/**
+ * @category instances
+ * @since 2.6.0
+ */
+export const getBooleanAlgebra: <E, A>(H: BooleanAlgebra<E>) => BooleanAlgebra<Const<E, A>> = identity as any
+
+/**
+ * @category instances
+ * @since 2.0.0
+ */
+export function getApply<E>(S: Semigroup<E>): Apply2C<URI, E> {
   return {
     URI,
-    _L: phantom,
-    map,
-    ap: ap(S)
+    _E: undefined as any,
+    map: map_,
+    ap: (fab, fa) => make(S.concat(fab, fa))
   }
 }
 
-const of = <L>(M: Monoid<L>) => <A>(a: A): Const<L, A> => {
-  return new Const(M.empty)
-}
-
 /**
- * @function
- * @since 1.0.0
+ * @category instances
+ * @since 2.0.0
  */
-export const getApplicative = <L>(M: Monoid<L>): Applicative2C<URI, L> => {
+export function getApplicative<E>(M: Monoid<E>): Applicative2C<URI, E> {
+  const A = getApply(M)
   return {
-    ...getApply(M),
-    of: of(M)
+    URI,
+    _E: undefined as any,
+    map: A.map,
+    ap: A.ap,
+    of: () => make(M.empty)
+  }
+}
+
+// -------------------------------------------------------------------------------------
+// non-pipeables
+// -------------------------------------------------------------------------------------
+
+const contramap_: Contravariant2<URI>['contramap'] = (fa, f) => pipe(fa, contramap(f))
+/* istanbul ignore next */
+const map_: Functor2<URI>['map'] = (fa, f) => pipe(fa, map(f))
+/* istanbul ignore next */
+const bimap_: Bifunctor2<URI>['bimap'] = (fa, f, g) => pipe(fa, bimap(f, g))
+/* istanbul ignore next */
+const mapLeft_: Bifunctor2<URI>['mapLeft'] = (fa, f) => pipe(fa, mapLeft(f))
+
+// -------------------------------------------------------------------------------------
+// pipeables
+// -------------------------------------------------------------------------------------
+
+/**
+ * @category Contravariant
+ * @since 2.0.0
+ */
+export const contramap: <A, B>(f: (b: B) => A) => <E>(fa: Const<E, A>) => Const<E, B> = () => unsafeCoerce
+
+/**
+ * `map` can be used to turn functions `(a: A) => B` into functions `(fa: F<A>) => F<B>` whose argument and return types
+ * use the type constructor `F` to represent some computational context.
+ *
+ * @category Functor
+ * @since 2.0.0
+ */
+export const map: <A, B>(f: (a: A) => B) => <E>(fa: Const<E, A>) => Const<E, B> = () => unsafeCoerce
+
+/**
+ * Map a pair of functions over the two type arguments of the bifunctor.
+ *
+ * @category Bifunctor
+ * @since 2.6.2
+ */
+export const bimap: <E, G, A, B>(f: (e: E) => G, g: (a: A) => B) => (fa: Const<E, A>) => Const<G, B> = (f) => (fa) =>
+  make(f(fa))
+
+/**
+ * Map a function over the first type argument of a bifunctor.
+ *
+ * @category Bifunctor
+ * @since 2.6.2
+ */
+export const mapLeft: <E, G>(f: (e: E) => G) => <A>(fa: Const<E, A>) => Const<G, A> = (f) => (fa) => make(f(fa))
+
+// -------------------------------------------------------------------------------------
+// instances
+// -------------------------------------------------------------------------------------
+
+/**
+ * @category instances
+ * @since 2.0.0
+ */
+export const URI = 'Const'
+
+/**
+ * @category instances
+ * @since 2.0.0
+ */
+export type URI = typeof URI
+
+declare module './HKT' {
+  interface URItoKind2<E, A> {
+    readonly [URI]: Const<E, A>
   }
 }
 
 /**
- * @instance
- * @since 1.0.0
+ * @category instances
+ * @since 2.7.0
  */
-export const const_: Functor2<URI> & Contravariant2<URI> = {
+export const Functor: Functor2<URI> = {
   URI,
-  map,
-  contramap
+  map: map_
+}
+
+/**
+ * @category instances
+ * @since 2.7.0
+ */
+export const Contravariant: Contravariant2<URI> = {
+  URI,
+  contramap: contramap_
+}
+
+/**
+ * @category instances
+ * @since 2.7.0
+ */
+export const Bifunctor: Bifunctor2<URI> = {
+  URI,
+  bimap: bimap_,
+  mapLeft: mapLeft_
+}
+
+// TODO: remove in v3
+/**
+ * @category instances
+ * @since 2.0.0
+ */
+export const const_: Functor2<URI> & Contravariant2<URI> & Bifunctor2<URI> = {
+  URI,
+  map: map_,
+  contramap: contramap_,
+  bimap: bimap_,
+  mapLeft: mapLeft_
 }

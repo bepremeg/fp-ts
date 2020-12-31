@@ -1,242 +1,276 @@
-import { Applicative, Applicative2C } from './Applicative'
+/**
+ * @since 2.0.0
+ */
+import { Applicative2C } from './Applicative'
 import { Apply2C } from './Apply'
 import { Bifunctor2 } from './Bifunctor'
 import { Chain2C } from './Chain'
 import { ChainRec2C } from './ChainRec'
 import { Comonad2 } from './Comonad'
-import { Either } from './Either'
 import { Foldable2 } from './Foldable'
-import { HKT } from './HKT'
 import { Monad2C } from './Monad'
 import { Monoid } from './Monoid'
-import { Ord, contramap as contramapOrd, getSemigroup as getOrdSemigroup } from './Ord'
+import * as RT from './ReadonlyTuple'
 import { Semigroup } from './Semigroup'
 import { Semigroupoid2 } from './Semigroupoid'
-import { Setoid } from './Setoid'
-import { Traversable2 } from './Traversable'
-import { phantom, toString } from './function'
+import { Traversable2, PipeableTraverse2 } from './Traversable'
+import { Functor2 } from './Functor'
+import { Extend2 } from './Extend'
 
-// Adapted from https://github.com/purescript/purescript-tuples
+// tslint:disable:readonly-array
 
-declare module './HKT' {
-  interface URI2HKT2<L, A> {
-    Tuple: Tuple<L, A>
-  }
-}
+// -------------------------------------------------------------------------------------
+// model
+// -------------------------------------------------------------------------------------
 
+/**
+ * @category destructors
+ * @since 2.0.0
+ */
+export const fst: <A, E>(ea: [A, E]) => A = RT.fst
+
+/**
+ * @category destructors
+ * @since 2.0.0
+ */
+export const snd: <A, E>(ea: [A, E]) => E = RT.snd
+
+/**
+ * @category combinators
+ * @since 2.0.0
+ */
+export const swap: <A, E>(sa: [A, E]) => [E, A] = RT.swap as any
+
+/**
+ * @category instances
+ * @since 2.0.0
+ */
+export const getApply: <S>(S: Semigroup<S>) => Apply2C<URI, S> = RT.getApply as any
+
+/**
+ * @category instances
+ * @since 2.0.0
+ */
+export const getApplicative: <M>(M: Monoid<M>) => Applicative2C<URI, M> = RT.getApplicative as any
+
+/**
+ * @category instances
+ * @since 2.0.0
+ */
+export const getChain: <S>(S: Semigroup<S>) => Chain2C<URI, S> = RT.getChain as any
+
+/**
+ * @category instances
+ * @since 2.0.0
+ */
+export const getMonad: <M>(M: Monoid<M>) => Monad2C<URI, M> = RT.getMonad as any
+
+// TODO: remove in v3
+/**
+ * @category instances
+ * @since 2.0.0
+ */
+export const getChainRec: <M>(M: Monoid<M>) => ChainRec2C<URI, M> = RT.getChainRec as any
+
+// -------------------------------------------------------------------------------------
+// non-pipeables
+// -------------------------------------------------------------------------------------
+
+const map_: Functor2<URI>['map'] = RT.Functor.map as any
+const bimap_: Bifunctor2<URI>['bimap'] = RT.Bifunctor.bimap as any
+const mapLeft_: Bifunctor2<URI>['mapLeft'] = RT.Bifunctor.mapLeft as any
+const compose_: Semigroupoid2<URI>['compose'] = RT.Semigroupoid.compose as any
+const extend_: Extend2<URI>['extend'] = RT.Comonad.extend as any
+const reduce_: Foldable2<URI>['reduce'] = RT.Foldable.reduce
+const foldMap_: Foldable2<URI>['foldMap'] = RT.Foldable.foldMap
+const reduceRight_: Foldable2<URI>['reduceRight'] = RT.Foldable.reduceRight
+const traverse_: Traversable2<URI>['traverse'] = RT.Traversable.traverse as any
+
+// -------------------------------------------------------------------------------------
+// pipeables
+// -------------------------------------------------------------------------------------
+
+/**
+ * Map a pair of functions over the two type arguments of the bifunctor.
+ *
+ * @category Bifunctor
+ * @since 2.0.0
+ */
+export const bimap: <E, G, A, B>(f: (e: E) => G, g: (a: A) => B) => (fa: [A, E]) => [B, G] = RT.bimap as any
+
+/**
+ * Map a function over the first type argument of a bifunctor.
+ *
+ * @category Bifunctor
+ * @since 2.0.0
+ */
+export const mapLeft: <E, G>(f: (e: E) => G) => <A>(fa: [A, E]) => [A, G] = RT.mapLeft as any
+
+/**
+ * @category Semigroupoid
+ * @since 2.0.0
+ */
+export const compose: <A, B>(ab: [B, A]) => <C>(bc: [C, B]) => [C, A] = RT.compose as any
+
+/**
+ * Derivable from `Extend`.
+ *
+ * @category combinators
+ * @since 2.0.0
+ */
+export const duplicate: <E, A>(wa: [A, E]) => [[A, E], E] = RT.duplicate as any
+
+/**
+ * @category Extend
+ * @since 2.0.0
+ */
+export const extend: <E, A, B>(f: (wa: [A, E]) => B) => (wa: [A, E]) => [B, E] = RT.extend as any
+
+/**
+ * @category Extract
+ * @since 2.6.2
+ */
+export const extract: <E, A>(wa: [A, E]) => A = RT.extract
+
+/**
+ * @category Foldable
+ * @since 2.0.0
+ */
+export const foldMap: <M>(M: Monoid<M>) => <A>(f: (a: A) => M) => <E>(fa: [A, E]) => M = RT.foldMap
+
+/**
+ * `map` can be used to turn functions `(a: A) => B` into functions `(fa: F<A>) => F<B>` whose argument and return types
+ * use the type constructor `F` to represent some computational context.
+ *
+ * @category Functor
+ * @since 2.0.0
+ */
+export const map: <A, B>(f: (a: A) => B) => <E>(fa: [A, E]) => [B, E] = RT.map as any
+
+/**
+ * @category Foldable
+ * @since 2.0.0
+ */
+export const reduce: <A, B>(b: B, f: (b: B, a: A) => B) => <E>(fa: [A, E]) => B = RT.reduce
+
+/**
+ * @category Foldable
+ * @since 2.0.0
+ */
+export const reduceRight: <A, B>(b: B, f: (a: A, b: B) => B) => <E>(fa: [A, E]) => B = RT.reduceRight
+
+/**
+ * @since 2.6.3
+ */
+export const traverse: PipeableTraverse2<URI> = RT.traverse as any
+
+/**
+ * @since 2.6.3
+ */
+export const sequence: Traversable2<URI>['sequence'] = RT.sequence as any
+
+// -------------------------------------------------------------------------------------
+// instances
+// -------------------------------------------------------------------------------------
+
+/**
+ * @category instances
+ * @since 2.0.0
+ */
 export const URI = 'Tuple'
 
+/**
+ * @category instances
+ * @since 2.0.0
+ */
 export type URI = typeof URI
 
+declare module './HKT' {
+  interface URItoKind2<E, A> {
+    readonly [URI]: [A, E]
+  }
+}
+
 /**
- * @data
- * @constructor Tuple
- * @since 1.0.0
+ * @category instances
+ * @since 2.7.0
  */
-export class Tuple<L, A> {
-  readonly _A!: A
-  readonly _L!: L
-  readonly _URI!: URI
-  constructor(readonly fst: L, readonly snd: A) {}
-  compose<B>(ab: Tuple<A, B>): Tuple<L, B> {
-    return new Tuple(this.fst, ab.snd)
-  }
-  map<B>(f: (a: A) => B): Tuple<L, B> {
-    return new Tuple(this.fst, f(this.snd))
-  }
-  bimap<M, B>(f: (l: L) => M, g: (a: A) => B): Tuple<M, B> {
-    return new Tuple(f(this.fst), g(this.snd))
-  }
-  extract(): A {
-    return this.snd
-  }
-  extend<B>(f: (fa: Tuple<L, A>) => B): Tuple<L, B> {
-    return new Tuple(this.fst, f(this))
-  }
-  reduce<B>(b: B, f: (b: B, a: A) => B): B {
-    return f(b, this.snd)
-  }
-  /** Exchange the first and second components of a tuple */
-  swap(): Tuple<A, L> {
-    return new Tuple(this.snd, this.fst)
-  }
-  inspect(): string {
-    return this.toString()
-  }
-  toString(): string {
-    return `new Tuple(${toString(this.fst)}, ${toString(this.snd)})`
-  }
-  toTuple(): [L, A] {
-    return [this.fst, this.snd]
-  }
-}
-
-const fst = <L, A>(fa: Tuple<L, A>): L => {
-  return fa.fst
-}
-
-const snd = <L, A>(fa: Tuple<L, A>): A => {
-  return fa.snd
-}
-
-const compose = <L, A, B>(bc: Tuple<A, B>, fa: Tuple<L, A>): Tuple<L, B> => {
-  return fa.compose(bc)
-}
-
-const map = <L, A, B>(fa: Tuple<L, A>, f: (a: A) => B): Tuple<L, B> => {
-  return fa.map(f)
-}
-
-const bimap = <L, A, M, B>(fla: Tuple<L, A>, f: (l: L) => M, g: (a: A) => B): Tuple<M, B> => {
-  return fla.bimap(f, g)
-}
-
-const extract = snd
-
-const extend = <L, A, B>(fa: Tuple<L, A>, f: (fa: Tuple<L, A>) => B): Tuple<L, B> => {
-  return fa.extend(f)
-}
-
-const reduce = <L, A, B>(fa: Tuple<L, A>, b: B, f: (b: B, a: A) => B): B => {
-  return fa.reduce(b, f)
+export const Functor: Functor2<URI> = {
+  URI,
+  map: map_
 }
 
 /**
- * @function
- * @since 1.0.0
+ * @category instances
+ * @since 2.7.0
  */
-export const getSetoid = <L, A>(SA: Setoid<L>, SB: Setoid<A>): Setoid<Tuple<L, A>> => {
-  return {
-    equals: (x, y) => SA.equals(x.fst, y.fst) && SB.equals(x.snd, y.snd)
-  }
+export const Bifunctor: Bifunctor2<URI> = {
+  URI,
+  bimap: bimap_,
+  mapLeft: mapLeft_
 }
 
 /**
- * To obtain the result, the `fst`s are `compare`d, and if they are `EQ`ual, the
- * `snd`s are `compare`d.
- * @function
- * @since 1.0.0
+ * @category instances
+ * @since 2.7.0
  */
-export const getOrd = <L, A>(OL: Ord<L>, OA: Ord<A>): Ord<Tuple<L, A>> => {
-  return getOrdSemigroup<Tuple<L, A>>().concat(contramapOrd(fst, OL), contramapOrd(snd, OA))
+export const Semigroupoid: Semigroupoid2<URI> = {
+  URI,
+  compose: compose_
 }
 
 /**
- * @function
- * @since 1.0.0
+ * @category instances
+ * @since 2.7.0
  */
-export const getSemigroup = <L, A>(SL: Semigroup<L>, SA: Semigroup<A>): Semigroup<Tuple<L, A>> => {
-  return {
-    concat: (x, y) => new Tuple(SL.concat(x.fst, y.fst), SA.concat(x.snd, y.snd))
-  }
+export const Comonad: Comonad2<URI> = {
+  URI,
+  map: map_,
+  extend: extend_,
+  extract
 }
 
 /**
- * @function
- * @since 1.0.0
+ * @category instances
+ * @since 2.7.0
  */
-export const getMonoid = <L, A>(ML: Monoid<L>, MA: Monoid<A>): Monoid<Tuple<L, A>> => {
-  return {
-    ...getSemigroup(ML, MA),
-    empty: new Tuple(ML.empty, MA.empty)
-  }
-}
-
-const ap = <L>(S: Semigroup<L>) => <A, B>(fab: Tuple<L, (a: A) => B>, fa: Tuple<L, A>): Tuple<L, B> => {
-  return new Tuple(S.concat(fab.fst, fa.fst), fab.snd(fa.snd))
+export const Foldable: Foldable2<URI> = {
+  URI,
+  reduce: reduce_,
+  foldMap: foldMap_,
+  reduceRight: reduceRight_
 }
 
 /**
- * @function
- * @since 1.0.0
+ * @category instances
+ * @since 2.7.0
  */
-export const getApply = <L>(S: Semigroup<L>): Apply2C<URI, L> => {
-  return {
-    URI,
-    _L: phantom,
-    map,
-    ap: ap(S)
-  }
+export const Traversable: Traversable2<URI> = {
+  URI,
+  map: map_,
+  reduce: reduce_,
+  foldMap: foldMap_,
+  reduceRight: reduceRight_,
+  traverse: traverse_,
+  sequence
 }
 
-const of = <L>(M: Monoid<L>) => <A>(a: A): Tuple<L, A> => {
-  return new Tuple(M.empty, a)
-}
-
+// TODO: remove in v3
 /**
- * @function
- * @since 1.0.0
- */
-export const getApplicative = <L>(M: Monoid<L>): Applicative2C<URI, L> => {
-  return {
-    ...getApply(M),
-    of: of(M)
-  }
-}
-
-const chain = <L>(S: Semigroup<L>) => <A, B>(fa: Tuple<L, A>, f: (b: A) => Tuple<L, B>): Tuple<L, B> => {
-  const { fst, snd } = f(fa.snd)
-  return new Tuple(S.concat(fa.fst, fst), snd)
-}
-
-/**
- * @function
- * @since 1.0.0
- */
-export const getChain = <L>(S: Semigroup<L>): Chain2C<URI, L> => {
-  return {
-    ...getApply(S),
-    chain: chain(S)
-  }
-}
-
-/**
- * @function
- * @since 1.0.0
- */
-export const getMonad = <L>(M: Monoid<L>): Monad2C<URI, L> => {
-  return {
-    ...getChain(M),
-    of: of(M)
-  }
-}
-
-const chainRec = <L>(M: Monoid<L>) => <A, B>(a: A, f: (a: A) => Tuple<L, Either<A, B>>): Tuple<L, B> => {
-  let result = f(a)
-  let acc = M.empty
-  while (result.snd.isLeft()) {
-    acc = M.concat(acc, result.fst)
-    result = f(result.snd.value)
-  }
-  return new Tuple(M.concat(acc, result.fst), result.snd.value)
-}
-
-/**
- * @function
- * @since 1.0.0
- */
-export const getChainRec = <L>(M: Monoid<L>): ChainRec2C<URI, L> => {
-  return {
-    ...getChain(M),
-    chainRec: chainRec(M)
-  }
-}
-
-function traverse<F>(F: Applicative<F>): <L, A, B>(ta: Tuple<L, A>, f: (a: A) => HKT<F, B>) => HKT<F, Tuple<L, B>> {
-  return (ta, f) => F.map(f(ta.snd), b => new Tuple(ta.fst, b))
-}
-
-/**
- * @instance
- * @since 1.0.0
+ * @category instances
+ * @since 2.0.0
  */
 export const tuple: Semigroupoid2<URI> & Bifunctor2<URI> & Comonad2<URI> & Foldable2<URI> & Traversable2<URI> = {
   URI,
-  compose,
-  map,
-  bimap,
+  compose: compose_,
+  map: map_,
+  bimap: bimap_,
+  mapLeft: mapLeft_,
   extract,
-  extend,
-  reduce,
-  traverse
+  extend: extend_,
+  reduce: reduce_,
+  foldMap: foldMap_,
+  reduceRight: reduceRight_,
+  traverse: traverse_,
+  sequence
 }

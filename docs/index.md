@@ -1,82 +1,40 @@
-# API
+---
+title: Introduction
+permalink: /
+nav_order: 1
+has_children: false
+has_toc: false
+---
 
-- [Alt](./Alt.md)
-- [Alternative](./Alternative.md)
-- [Applicative](./Applicative.md)
-- [Apply](./Apply.md)
-- [Array](./Array.md)
-- [Bifunctor](./Bifunctor.md)
-- [BooleanAlgebra](./BooleanAlgebra.md)
-- [Bounded](./Bounded.md)
-- [BoundedDistributiveLattice](./BoundedDistributiveLattice.md)
-- [BoundedJoinSemilattice](./BoundedJoinSemilattice.md)
-- [BoundedLattice](./BoundedLattice.md)
-- [BoundedMeetSemilattice](./BoundedMeetSemilattice.md)
-- [Category](./Category.md)
-- [Chain](./Chain.md)
-- [ChainRec](./ChainRec.md)
-- [Comonad](./Comonad.md)
-- [Compactable](./Compactable.md)
-- [Console](./Console.md)
-- [Const](./Const.md)
-- [Contravariant](./Contravariant.md)
-- [DistributiveLattice](./DistributiveLattice.md)
-- [Either](./Either.md)
-- [EitherT](./EitherT.md)
-- [Exception](./Exception.md)
-- [Extend](./Extend.md)
-- [Field](./Field.md)
-- [Filterable](./Filterable.md)
-- [Foldable](./Foldable.md)
-- [Free](./Free.md)
-- [Functor](./Functor.md)
-- [HKT](./HKT.md)
-- [HeytingAlgebra](./HeytingAlgebra.md)
-- [IO](./IO.md)
-- [IOEither](./IOEither.md)
-- [IORef](./IORef.md)
-- [Identity](./Identity.md)
-- [Invariant](./Invariant.md)
-- [IxIO](./IxIO.md)
-- [IxMonad](./IxMonad.md)
-- [JoinSemilattice](./JoinSemilattice.md)
-- [Lattice](./Lattice.md)
-- [MeetSemilattice](./MeetSemilattice.md)
-- [Monad](./Monad.md)
-- [Monoid](./Monoid.md)
-- [Monoidal](./Monoidal.md)
-- [NonEmptyArray](./NonEmptyArray.md)
-- [Option](./Option.md)
-- [OptionT](./OptionT.md)
-- [Ord](./Ord.md)
-- [Ordering](./Ordering.md)
-- [Pair](./Pair.md)
-- [Plus](./Plus.md)
-- [Profunctor](./Profunctor.md)
-- [Random](./Random.md)
-- [Reader](./Reader.md)
-- [ReaderT](./ReaderT.md)
-- [ReaderTaskEither](./ReaderTaskEither.md)
-- [Ring](./Ring.md)
-- [Semigroup](./Semigroup.md)
-- [Semigroupoid](./Semigroupoid.md)
-- [Semiring](./Semiring.md)
-- [Set](./Set.md)
-- [Setoid](./Setoid.md)
-- [State](./State.md)
-- [StateT](./StateT.md)
-- [Store](./Store.md)
-- [StrMap](./StrMap.md)
-- [Task](./Task.md)
-- [TaskEither](./TaskEither.md)
-- [These](./These.md)
-- [Trace](./Trace.md)
-- [Traversable](./Traversable.md)
-- [Tree](./Tree.md)
-- [Tuple](./Tuple.md)
-- [Unfoldable](./Unfoldable.md)
-- [Validation](./Validation.md)
-- [Witherable](./Witherable.md)
-- [Writer](./Writer.md)
-- [Zipper](./Zipper.md)
-- [function](./function.md)
+<img alt="fp-ts logo" src="./fp-ts-logo.png" style="display: block; width: 200px; margin-bottom: 2em;">
+
+# Typed functional programming in TypeScript
+
+`fp-ts` provides developers with popular patterns and reliable abstractions from typed functional languages in TypeScript.
+{: .fs-6 .fw-300 }
+
+**Disclaimer**. Teaching functional programming is out of scope of this project, so the documentation assumes you already know what FP is.
+
+## Core Concepts
+
+The goal of `fp-ts` is to empower developers to write pure FP apps and libraries built atop higher order abstractions. It includes the most popular data types, type classes, and abstractions from languages like [Haskell](https://haskell-lang.org), [PureScript](http://www.purescript.org), and [Scala](https://www.scala-lang.org/).
+
+## Functions
+
+Functional programming is all about pure functions and how to compose them into bigger structures. `fp-ts` provides a few general [functions](./modules/function.ts.html) to support you with composition, constant functions, and more.
+
+## Data Types
+
+Data types are the practical part of `fp-ts`: you can instantiate them with your data to gain properties and functionality that are useful for solving a specific need. Because data types all share common interfaces (through [type classes](#type-classes)), once you learn how to use one data type, you can apply the same concepts to the others.
+
+Many functions in `fp-ts` use [ad hoc polymorphism](https://en.wikipedia.org/wiki/Ad_hoc_polymorphism), meaning that they have a single implementation that can deal with arguments of different types. To make this work, it is often necessary to provide a data type _instance_ that provides functionality that is specific to the data type.
+
+**Note**. Data types are not stack safe and there is no trampolining implementation. But for traversing and sequencing lists there is a stack safe and optimized version in each data types.
+
+## Type Classes
+
+Type classes provide the theoretical underpinnings of `fp-ts`: they describe what you can do with your data. To guarantee that they can be safely composed, they are built on laws rooted in abstract algebra and [category theory](https://en.wikipedia.org/wiki/Category_theory).
+
+## Higher Kinded Types
+
+A distinctive feature of `fp-ts` with respect to other functional libraries is its implementation of [Higher Kinded Types](<https://en.wikipedia.org/wiki/Kind_(type_theory)>), which TypeScript doesn't support natively. The idea for emulating higher kinded types in TypeScript is based on [Lightweight higher-kinded polymorphism](https://www.cl.cam.ac.uk/~jdy22/papers/lightweight-higher-kinded-polymorphism.pdf).

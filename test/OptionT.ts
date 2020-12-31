@@ -1,86 +1,60 @@
 import * as assert from 'assert'
-import * as option from '../src/Option'
-import * as optionT from '../src/OptionT'
-import { task } from '../src/Task'
+import * as O from '../src/Option'
+import { getOptionM } from '../src/OptionT'
+import * as T from '../src/Task'
 
-const taskOption = optionT.getOptionT(task)
-const none = optionT.none(task)()
+const MT = getOptionM(T.Monad)
 
 describe('OptionT', () => {
   it('map', () => {
-    const greetingT = taskOption.of('welcome')
-    const excitedGreetingT = taskOption.map(greetingT, s => s + '!')
-    return excitedGreetingT.run().then(o => {
-      assert.deepEqual(o, option.some('welcome!'))
+    const greetingT = MT.of('welcome')
+    const excitedGreetingT = MT.map(greetingT, (s) => s + '!')
+    return excitedGreetingT().then((o) => {
+      assert.deepStrictEqual(o, O.some('welcome!'))
     })
   })
 
   it('chain', () => {
-    const to1 = taskOption.chain(a => taskOption.of(a.length), taskOption.of('foo'))
-    const to2 = taskOption.chain((a: string) => taskOption.of(a.length), none)
-    return Promise.all([to1.run(), to2.run()]).then(([o1, o2]) => {
-      assert.deepEqual(o1, option.some(3))
-      assert.deepEqual(o2, option.none)
+    const to1 = MT.chain(MT.of('foo'), (a) => MT.of(a.length))
+    const to2 = MT.chain(T.of(O.none), (a: string) => MT.of(a.length))
+    return Promise.all([to1(), to2()]).then(([o1, o2]) => {
+      assert.deepStrictEqual(o1, O.some(3))
+      assert.deepStrictEqual(o2, O.none)
     })
   })
 
-  it('fold', () => {
-    const f = 'none'
-    const g = (s: string) => `some${s.length}`
-    const p1 = optionT
-      .fold(task)(f, g, none)
-      .run()
-      .then(s => {
-        assert.strictEqual(s, 'none')
-      })
-    const p2 = optionT
-      .fold(task)(f, g, taskOption.of('s'))
-      .run()
-      .then(s => {
-        assert.strictEqual(s, 'some1')
-      })
-    return Promise.all([p1, p2])
+  it('fold', async () => {
+    const f = () => T.of('none')
+    const g = (s: string) => T.of(`some${s.length}`)
+    const s1 = await MT.fold(T.of(O.none), f, g)()
+    assert.deepStrictEqual(s1, 'none')
+    const s2 = await MT.fold(MT.of('s'), f, g)()
+    assert.deepStrictEqual(s2, 'some1')
   })
 
-  it('getOrElse', () => {
-    const greetingT = taskOption.of('welcome')
-    const getOrElse = optionT.getOrElse(task)('hello, there!')
-    const p1 = getOrElse(greetingT)
-      .run()
-      .then(s => {
-        assert.strictEqual(s, 'welcome')
-      })
-    const p2 = getOrElse(none)
-      .run()
-      .then(s => {
-        assert.strictEqual(s, 'hello, there!')
-      })
-    return Promise.all([p1, p2])
+  it('alt', async () => {
+    const o1 = await MT.alt(T.of(O.some(1)), () => T.of(O.some(2)))()
+    assert.deepStrictEqual(o1, O.some(1))
+    const o2 = await MT.alt(T.of(O.none), () => T.of(O.some(2)))()
+    assert.deepStrictEqual(o2, O.some(2))
   })
 
-  it('some', () => {
-    const some = optionT.some(task)
-    return some(1)
-      .run()
-      .then(o => {
-        assert.deepEqual(o, option.some(1))
-      })
+  it('getOrElse', async () => {
+    const n1 = await MT.getOrElse(T.of(O.some(1)), () => T.of(2))()
+    assert.deepStrictEqual(n1, 1)
+    const n2 = await MT.getOrElse(T.of(O.none), () => T.of(2))()
+    assert.deepStrictEqual(n2, 2)
   })
 
-  it('fromOption', () => {
-    const fromOption = optionT.fromOption(task)
-    return Promise.all([fromOption(option.some(1)).run(), fromOption(option.none).run()]).then(([o1, o2]) => {
-      assert.deepEqual(o1, option.some(1))
-      assert.deepEqual(o2, option.none)
+  it('fromM', () => {
+    return MT.fromM(T.of(1))().then((o) => {
+      assert.deepStrictEqual(o, O.some(1))
     })
   })
 
-  it('liftF', () => {
-    const liftF = optionT.liftF(task)
-    return liftF(task.of(1))
-      .run()
-      .then(o => {
-        assert.deepEqual(o, option.some(1))
-      })
+  it('none', () => {
+    return MT.none()().then((o) => {
+      assert.deepStrictEqual(o, O.none)
+    })
   })
 })

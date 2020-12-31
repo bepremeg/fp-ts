@@ -1,49 +1,61 @@
-import { Functor, Functor1, Functor2, Functor2C, Functor3, Functor3C } from './Functor'
-import { HKT, Type, Type2, Type3, URIS, URIS2, URIS3 } from './HKT'
-import { identity } from './function'
+/**
+ * @since 2.0.0
+ */
+import { Functor, Functor1, Functor2, Functor2C, Functor3, Functor4, Functor3C } from './Functor'
+import { HKT, Kind, Kind2, Kind3, URIS, URIS2, URIS3, URIS4, Kind4 } from './HKT'
 
 /**
- * @typeclass
- * @since 1.0.0
+ * @category type classes
+ * @since 2.0.0
  */
-export interface Extend<F> extends Functor<F> {
-  readonly extend: <A, B>(ea: HKT<F, A>, f: (fa: HKT<F, A>) => B) => HKT<F, B>
+export interface Extend<W> extends Functor<W> {
+  readonly extend: <A, B>(wa: HKT<W, A>, f: (wa: HKT<W, A>) => B) => HKT<W, B>
 }
 
-export interface Extend1<F extends URIS> extends Functor1<F> {
-  readonly extend: <A, B>(ea: Type<F, A>, f: (fa: Type<F, A>) => B) => Type<F, B>
-}
-
-export interface Extend2<F extends URIS2> extends Functor2<F> {
-  readonly extend: <L, A, B>(ea: Type2<F, L, A>, f: (fa: Type2<F, L, A>) => B) => Type2<F, L, B>
-}
-
-export interface Extend3<F extends URIS3> extends Functor3<F> {
-  readonly extend: <U, L, A, B>(ea: Type3<F, U, L, A>, f: (fa: Type3<F, U, L, A>) => B) => Type3<F, U, L, B>
-}
-
-export interface Extend2C<F extends URIS2, L> extends Functor2C<F, L> {
-  readonly extend: <A, B>(ea: Type2<F, L, A>, f: (fa: Type2<F, L, A>) => B) => Type2<F, L, B>
-}
-
-export interface Extend3C<F extends URIS3, U, L> extends Functor3C<F, U, L> {
-  readonly extend: <A, B>(ea: Type3<F, U, L, A>, f: (fa: Type3<F, U, L, A>) => B) => Type3<F, U, L, B>
-}
-
-export function duplicate<F extends URIS3>(
-  E: Extend3<F>
-): <U, L, A>(ma: Type3<F, U, L, A>) => Type3<F, U, L, Type3<F, U, L, A>>
-export function duplicate<F extends URIS3, U, L>(
-  E: Extend3C<F, U, L>
-): <A>(ma: Type3<F, U, L, A>) => Type3<F, U, L, Type3<F, U, L, A>>
-export function duplicate<F extends URIS2>(E: Extend2<F>): <L, A>(ma: Type2<F, L, A>) => Type2<F, L, Type2<F, L, A>>
-export function duplicate<F extends URIS2, L>(E: Extend2C<F, L>): <A>(ma: Type2<F, L, A>) => Type2<F, L, Type2<F, L, A>>
-export function duplicate<F extends URIS>(E: Extend1<F>): <A>(ma: Type<F, A>) => Type<F, Type<F, A>>
-export function duplicate<F>(E: Extend<F>): <A>(ma: HKT<F, A>) => HKT<F, HKT<F, A>>
 /**
- * @function
- * @since 1.0.0
+ * @category type classes
+ * @since 2.0.0
  */
-export function duplicate<F>(E: Extend<F>): <A>(ma: HKT<F, A>) => HKT<F, HKT<F, A>> {
-  return ma => E.extend(ma, identity)
+export interface Extend1<W extends URIS> extends Functor1<W> {
+  readonly extend: <A, B>(wa: Kind<W, A>, f: (wa: Kind<W, A>) => B) => Kind<W, B>
+}
+
+/**
+ * @category type classes
+ * @since 2.0.0
+ */
+export interface Extend2<W extends URIS2> extends Functor2<W> {
+  readonly extend: <E, A, B>(wa: Kind2<W, E, A>, f: (wa: Kind2<W, E, A>) => B) => Kind2<W, E, B>
+}
+
+/**
+ * @category type classes
+ * @since 2.0.0
+ */
+export interface Extend2C<W extends URIS2, E> extends Functor2C<W, E> {
+  readonly extend: <A, B>(wa: Kind2<W, E, A>, f: (wa: Kind2<W, E, A>) => B) => Kind2<W, E, B>
+}
+
+/**
+ * @category type classes
+ * @since 2.0.0
+ */
+export interface Extend3<W extends URIS3> extends Functor3<W> {
+  readonly extend: <R, E, A, B>(wa: Kind3<W, R, E, A>, f: (wa: Kind3<W, R, E, A>) => B) => Kind3<W, R, E, B>
+}
+
+/**
+ * @category type classes
+ * @since 2.2.0
+ */
+export interface Extend3C<W extends URIS3, E> extends Functor3C<W, E> {
+  readonly extend: <R, A, B>(wa: Kind3<W, R, E, A>, f: (wa: Kind3<W, R, E, A>) => B) => Kind3<W, R, E, B>
+}
+
+/**
+ * @category type classes
+ * @since 2.0.0
+ */
+export interface Extend4<W extends URIS4> extends Functor4<W> {
+  readonly extend: <S, R, E, A, B>(wa: Kind4<W, S, R, E, A>, f: (wa: Kind4<W, S, R, E, A>) => B) => Kind4<W, S, R, E, B>
 }

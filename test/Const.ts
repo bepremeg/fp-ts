@@ -1,49 +1,59 @@
 import * as assert from 'assert'
-import { Const, getApply, getSetoid, const_, getApplicative } from '../src/Const'
+import * as _ from '../src/Const'
 import { semigroupString } from '../src/Semigroup'
-import { setoidNumber } from '../src/Setoid'
+import { eqNumber } from '../src/Eq'
 import { monoidString } from '../src/Monoid'
+import { showString } from '../src/Show'
+import { pipe } from '../src/function'
 
 describe('Const', () => {
-  it('map', () => {
-    const fa = new Const<string, number>('foo')
-    const double = (n: number): number => n * 2
-    assert.strictEqual(fa.map(double), fa)
-    assert.strictEqual(const_.map(fa, double), fa)
-  })
+  describe('pipeables', () => {
+    it('map', () => {
+      const fa = _.make('foo')
+      const double = (n: number): number => n * 2
+      assert.deepStrictEqual(pipe(fa, _.map(double)), fa)
+    })
 
-  it('contramap', () => {
-    const fa = new Const<string, number>('foo')
-    const double = (n: number): number => n * 2
-    assert.strictEqual(fa.contramap(double), fa)
-    assert.strictEqual(const_.contramap(fa, double), fa)
-  })
+    it('contramap', () => {
+      const fa: _.Const<string, number> = _.make('foo')
+      const double = (n: number): number => n * 2
+      assert.deepStrictEqual(pipe(fa, _.contramap(double)), fa)
+    })
 
-  it('fold', () => {
-    const fa = new Const<string, number>('foo')
-    assert.strictEqual(fa.fold(s => s.length), 3)
-  })
+    it('bimap', () => {
+      const fa: _.Const<string, number> = _.make('a')
+      const f = (s: string): string => s.toUpperCase()
+      const g = (n: number): number => n * 2
+      assert.deepStrictEqual(pipe(fa, _.bimap(f, g)), _.make('A'))
+    })
 
-  it('getApplicative', () => {
-    const F = getApplicative(monoidString)
-    assert.deepEqual(F.of(1), new Const<string, number>(''))
-  })
-
-  it('toString', () => {
-    const fa = new Const<string, number>('foo')
-    assert.strictEqual(fa.toString(), 'new Const("foo")')
-    assert.strictEqual(fa.inspect(), 'new Const("foo")')
-  })
-
-  it('getSetoid', () => {
-    const S = getSetoid<number, string>(setoidNumber)
-    assert.strictEqual(S.equals(new Const(1), new Const(1)), true)
-    assert.strictEqual(S.equals(new Const(1), new Const(2)), false)
+    it('mapLeft', () => {
+      const fa: _.Const<string, number> = _.make('a')
+      const f = (s: string): string => s.toUpperCase()
+      assert.deepStrictEqual(pipe(fa, _.mapLeft(f)), _.make('A'))
+    })
   })
 
   it('getApplicative', () => {
-    const F = getApply(semigroupString)
-    const fa = new Const<string, (n: number) => number>('foo')
-    assert.deepEqual(F.ap(fa, new Const('bar')), new Const('foobar'))
+    const F = _.getApplicative(monoidString)
+    assert.deepStrictEqual(F.of(1), _.make(''))
+  })
+
+  it('getEq', () => {
+    const S = _.getEq(eqNumber)
+    assert.deepStrictEqual(S.equals(_.make(1), _.make(1)), true)
+    assert.deepStrictEqual(S.equals(_.make(1), _.make(2)), false)
+  })
+
+  it('getApplicative', () => {
+    const F = _.getApply(semigroupString)
+    const fa = _.make('foo')
+    assert.deepStrictEqual(F.ap(fa, _.make('bar')), _.make('foobar'))
+  })
+
+  it('getShow', () => {
+    const S = _.getShow(showString)
+    const x: _.Const<string, number> = _.make('a')
+    assert.deepStrictEqual(S.show(x), `make("a")`)
   })
 })

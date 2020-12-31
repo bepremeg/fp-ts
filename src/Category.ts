@@ -1,22 +1,37 @@
-import { HKT2, Type2, Type3, URIS2, URIS3 } from './HKT'
-import { Semigroupoid, Semigroupoid2, Semigroupoid3, Semigroupoid3C } from './Semigroupoid'
+/**
+ * @since 2.0.0
+ */
+import { HKT2, Kind2, Kind3, URIS2, URIS3, URIS4, Kind4 } from './HKT'
+import { Semigroupoid, Semigroupoid2, Semigroupoid3, Semigroupoid4 } from './Semigroupoid'
 
 /**
- * @typeclass
- * @since 1.0.0
+ * @category type classes
+ * @since 2.0.0
  */
 export interface Category<F> extends Semigroupoid<F> {
   readonly id: <A>() => HKT2<F, A, A>
 }
 
+/**
+ * @category type classes
+ * @since 2.0.0
+ */
 export interface Category2<F extends URIS2> extends Semigroupoid2<F> {
-  readonly id: <A>() => Type2<F, A, A>
+  readonly id: <A>() => Kind2<F, A, A>
 }
 
+/**
+ * @category type classes
+ * @since 2.0.0
+ */
 export interface Category3<F extends URIS3> extends Semigroupoid3<F> {
-  readonly id: <U, A>() => Type3<F, U, A, A>
+  readonly id: <R, A>() => Kind3<F, R, A, A>
 }
 
-export interface Category3C<F extends URIS3, U> extends Semigroupoid3C<F, U> {
-  readonly id: <A>() => Type3<F, U, A, A>
+/**
+ * @category type classes
+ * @since 2.0.0
+ */
+export interface Category4<F extends URIS4> extends Semigroupoid4<F> {
+  readonly id: <S, R, A>() => Kind4<F, S, R, A, A>
 }

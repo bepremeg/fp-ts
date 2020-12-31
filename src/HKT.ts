@@ -1,38 +1,122 @@
+/**
+ * Type defunctionalization (as describe in [Lightweight higher-kinded polymorphism](https://www.cl.cam.ac.uk/~jdy22/papers/lightweight-higher-kinded-polymorphism.pdf))
+ *
+ * @since 2.0.0
+ */
+
+/**
+ * `* -> *` constructors
+ * @since 2.0.0
+ */
 export interface HKT<URI, A> {
   readonly _URI: URI
   readonly _A: A
 }
 
-export interface HKT2<URI, L, A> extends HKT<URI, A> {
-  readonly _L: L
+/**
+ * `* -> * -> *` constructors
+ * @since 2.0.0
+ */
+export interface HKT2<URI, E, A> extends HKT<URI, A> {
+  readonly _E: E
 }
 
-export interface HKT3<URI, U, L, A> extends HKT2<URI, L, A> {
-  readonly _U: U
+/**
+ * `* -> * -> * -> *` constructors
+ * @since 2.0.0
+ */
+export interface HKT3<URI, R, E, A> extends HKT2<URI, E, A> {
+  readonly _R: R
 }
 
-// type-level dictionaries for HKTs
+/**
+ * `* -> * -> * -> * -> *` constructors
+ * @since 2.0.0
+ */
+export interface HKT4<URI, S, R, E, A> extends HKT3<URI, R, E, A> {
+  readonly _S: S
+}
 
-export interface URI2HKT<A> {}
-export interface URI2HKT2<L, A> {}
-export interface URI2HKT3<U, L, A> {}
+//
+// inj: type-level dictionaries for HKTs: URI -> concrete type
+//
 
-// URI constraints with dictionary integrity constraint
+/**
+ * `* -> *` constructors
+ * @since 2.0.0
+ */
+export interface URItoKind<A> {}
 
-export type URIS = (URI2HKT<any> & { never: HKT<never, never> })[keyof URI2HKT<any> | 'never']['_URI']
-export type URIS2 = (URI2HKT2<any, any> & { never: HKT<never, never> })[keyof URI2HKT2<any, any> | 'never']['_URI']
-export type URIS3 = (URI2HKT3<any, any, any> & { never: HKT<never, never> })[
-  | keyof URI2HKT3<any, any, any>
-  | 'never']['_URI']
+/**
+ * `* -> * -> *` constructors
+ * @since 2.0.0
+ */
+export interface URItoKind2<E, A> {}
 
-export type Type<URI extends URIS, A> = {} & URI2HKT<A>[URI]
-export type Type2<URI extends URIS2, L, A> = {} & URI2HKT2<L, A>[URI]
-export type Type3<URI extends URIS3, U, L, A> = {} & URI2HKT3<U, L, A>[URI]
+/**
+ * `* -> * -> * -> *` constructors
+ * @since 2.0.0
+ */
+export interface URItoKind3<R, E, A> {}
 
-// Type-level integrity check
+/**
+ * `* -> * -> * -> * -> *` constructors
+ * @since 2.0.0
+ */
+export interface URItoKind4<S, R, E, A> {}
 
-/* tslint:disable */
-(null! as URI2HKT<any>) as { [k in keyof URI2HKT<any>]: HKT<k, any> }
-(null! as URI2HKT2<any, any>) as { [k in keyof URI2HKT2<any, any>]: HKT2<k, any, any> }
-(null! as URI2HKT3<any, any, any>) as { [k in keyof URI2HKT3<any, any, any>]: HKT3<k, any, any, any> }
-/* tslint:enable */
+//
+// unions of URIs
+//
+
+/**
+ * `* -> *` constructors
+ * @since 2.0.0
+ */
+export type URIS = keyof URItoKind<any>
+
+/**
+ * `* -> * -> *` constructors
+ * @since 2.0.0
+ */
+export type URIS2 = keyof URItoKind2<any, any>
+
+/**
+ * `* -> * -> * -> *` constructors
+ * @since 2.0.0
+ */
+export type URIS3 = keyof URItoKind3<any, any, any>
+
+/**
+ * `* -> * -> * -> * -> *` constructors
+ * @since 2.0.0
+ */
+export type URIS4 = keyof URItoKind4<any, any, any, any>
+
+//
+// prj
+//
+
+/**
+ * `* -> *` constructors
+ * @since 2.0.0
+ */
+export type Kind<URI extends URIS, A> = URI extends URIS ? URItoKind<A>[URI] : any
+
+/**
+ * `* -> * -> *` constructors
+ * @since 2.0.0
+ */
+export type Kind2<URI extends URIS2, E, A> = URI extends URIS2 ? URItoKind2<E, A>[URI] : any
+
+/**
+ * `* -> * -> * -> *` constructors
+ * @since 2.0.0
+ */
+export type Kind3<URI extends URIS3, R, E, A> = URI extends URIS3 ? URItoKind3<R, E, A>[URI] : any
+
+/**
+ * `* -> * -> * -> * -> *` constructors
+ * @since 2.0.0
+ */
+export type Kind4<URI extends URIS4, S, R, E, A> = URI extends URIS4 ? URItoKind4<S, R, E, A>[URI] : any

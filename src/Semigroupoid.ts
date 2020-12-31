@@ -1,26 +1,60 @@
-import { HKT2, Type2, Type3, URIS2, URIS3 } from './HKT'
+/**
+ * @since 2.0.0
+ */
+import { HKT2, Kind2, Kind3, Kind4, URIS2, URIS3, URIS4 } from './HKT'
 
 /**
- * @typeclass
- * @since 1.0.0
+ * @category type classes
+ * @since 2.0.0
  */
 export interface Semigroupoid<F> {
   readonly URI: F
-  readonly compose: <L, A, B>(bc: HKT2<F, A, B>, ab: HKT2<F, L, A>) => HKT2<F, L, B>
+  readonly compose: <A, B, C>(bc: HKT2<F, B, C>, ab: HKT2<F, A, B>) => HKT2<F, A, C>
 }
 
+/**
+ * @category type classes
+ * @since 2.0.0
+ */
 export interface Semigroupoid2<F extends URIS2> {
   readonly URI: F
-  readonly compose: <L, A, B>(bc: Type2<F, A, B>, ab: Type2<F, L, A>) => Type2<F, L, B>
+  readonly compose: <A, B, C>(ab: Kind2<F, B, C>, la: Kind2<F, A, B>) => Kind2<F, A, C>
 }
 
+/**
+ * @category type classes
+ * @since 2.0.0
+ */
+export interface Semigroupoid2C<F extends URIS2, A> {
+  readonly URI: F
+  readonly _E: A
+  readonly compose: <B, C>(ab: Kind2<F, B, C>, la: Kind2<F, A, B>) => Kind2<F, A, C>
+}
+
+/**
+ * @category type classes
+ * @since 2.0.0
+ */
 export interface Semigroupoid3<F extends URIS3> {
   readonly URI: F
-  readonly compose: <U, L, A, B>(bc: Type3<F, U, A, B>, ab: Type3<F, U, L, A>) => Type3<F, U, L, B>
+  readonly compose: <R, A, B, C>(ab: Kind3<F, R, B, C>, la: Kind3<F, R, A, B>) => Kind3<F, R, A, C>
 }
 
-export interface Semigroupoid3C<F extends URIS3, U> {
+/**
+ * @category type classes
+ * @since 2.2.0
+ */
+export interface Semigroupoid3C<F extends URIS3, A> {
   readonly URI: F
-  readonly _U: U
-  readonly compose: <L, A, B>(bc: Type3<F, U, A, B>, ab: Type3<F, U, L, A>) => Type3<F, U, L, B>
+  readonly _E: A
+  readonly compose: <R, B, C>(ab: Kind3<F, R, B, C>, la: Kind3<F, R, A, B>) => Kind3<F, R, A, C>
+}
+
+/**
+ * @category type classes
+ * @since 2.0.0
+ */
+export interface Semigroupoid4<F extends URIS4> {
+  readonly URI: F
+  readonly compose: <S, R, A, B, C>(ab: Kind4<F, S, R, B, C>, la: Kind4<F, S, R, A, B>) => Kind4<F, S, R, A, C>
 }

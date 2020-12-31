@@ -1,418 +1,827 @@
-import { Alternative1 } from './Alternative'
-import { Applicative } from './Applicative'
-import { Either } from './Either'
-import { Extend1 } from './Extend'
-import { Foldable1 } from './Foldable'
-import { HKT } from './HKT'
-import { Monad1 } from './Monad'
-import { getDualMonoid, Monoid } from './Monoid'
-import { Ord } from './Ord'
-import { Plus1 } from './Plus'
-import { Semigroup } from './Semigroup'
-import { Setoid } from './Setoid'
-import { Traversable1 } from './Traversable'
-import { identity, Lazy, not, Predicate, Refinement, toString } from './function'
-import { Compactable1, Separated } from './Compactable'
-import { Filterable1 } from './Filterable'
-import { Witherable1 } from './Witherable'
-
-declare module './HKT' {
-  interface URI2HKT<A> {
-    Option: Option<A>
-  }
-}
-
-export const URI = 'Option'
-
-export type URI = typeof URI
-
 /**
- * If you have worked with JavaScript at all in the past, it is very likely that you have come across a `TypeError` at
- * some time (other languages will throw similarly named errors in such a case). Usually this happens because some
- * method returns `null` or `undefined` when you were not expecting it and thus not dealing with that possibility in
- * your client code.
- *
  * ```ts
- * const as: Array<string> = []
- * as[0].trim() // throws TypeError: Cannot read property 'trim' of undefined
+ * type Option<A> = None | Some<A>
  * ```
- *
- * fp-ts models the absence of values through the `Option` datatype similar to how Scala, Haskell and other FP languages
- * handle optional values. A value of `null` or `undefined` is often abused to represent an absent optional value.
  *
  * `Option<A>` is a container for an optional value of type `A`. If the value of type `A` is present, the `Option<A>` is
  * an instance of `Some<A>`, containing the present value of type `A`. If the value is absent, the `Option<A>` is an
- * instance of `None<A>`.
+ * instance of `None`.
  *
  * An option could be looked at as a collection or foldable structure with either one or zero elements.
- * Another way to look at option is: it represents the effect of a possibly failing computation.
+ * Another way to look at `Option` is: it represents the effect of a possibly failing computation.
  *
- * ```ts
- * import { Option, some, none } from 'fp-ts/lib/Option'
- *
- * const someValue: Option<string> = some('foo')
- * const emptyValue: Option<string> = none
- * ```
- *
- * Let's write a function that may or not give us a string, thus returning `Option<string>`
- *
- *
- * ```ts
- * const head = (as: Array<string>): Option<string> => {
- *   return as.length > 0 ? some(as[0]) : none
- * }
- * ```
- *
- * Using `getOrElse` we can provide a default value `"No value"` when the optional argument `None` does not exist:
- *
- * ```ts
- * const value1 = head(['foo', 'bar']) // some('foo)
- * const value2 = head([]) // none
- * value1.getOrElse('No value') // 'foo'
- * value2.getOrElse('No value') // 'No value'
- * ```
- *
- * Checking whether option has value:
- *
- * ```ts
- * value1.isNone() // false
- * value2.isNone() // true
- * ```
- *
- * We can pattern match using the `fold` method
- *
- * ```ts
- * const number: Option<number> = some(3)
- * const noNumber: Option<number> = none
- * number.fold(1, n => n * 3) // 9
- * noNumber.fold(1, n => n * 3) // 1
- * ```
- *
- * You can chain several possibly failing computations using the `chain` method
- *
- * ```ts
- * const inverse = (n: number): Option<number> => {
- *   return n === 0 ? none : some(1 / n)
- * }
- *
- * number.chain(inverse) // 1/3
- * noNumber.chain(inverse) // none
- * some(0).chain(inverse) // none
- * ```
- *
- * Computing over independent values
- *
- * ```ts
- * const sum = (a: number) => (b: number): number => a + b
- * const sumLifted = (oa: Option<number>, ob: Option<number>): Option<number> => ob.ap(oa.map(sum))
- * sumLifted(some(1), some(2)) // some(3)
- * sumLifted(some(1), none) // none
- * ```
- *
- * @data
- * @constructor None
- * @constructor Some
- * @since 1.0.0
+ * @since 2.0.0
  */
-export type Option<A> = None<A> | Some<A>
+import { Alt1 } from './Alt'
+import { Alternative1 } from './Alternative'
+import { Applicative as ApplicativeHKT, Applicative1 } from './Applicative'
+import { Compactable1, Separated } from './Compactable'
+import { Either } from './Either'
+import { Eq } from './Eq'
+import { Extend1 } from './Extend'
+import { Filterable1 } from './Filterable'
+import { Foldable1 } from './Foldable'
+import { identity, Lazy, Predicate, Refinement, pipe, bind_, bindTo_, flow } from './function'
+import { Functor1 } from './Functor'
+import { HKT } from './HKT'
+import { Monad1 } from './Monad'
+import { MonadThrow1 } from './MonadThrow'
+import { Monoid } from './Monoid'
+import { Ord } from './Ord'
+import { Semigroup } from './Semigroup'
+import { Show } from './Show'
+import { PipeableTraverse1, Traversable1 } from './Traversable'
+import { PipeableWilt1, PipeableWither1, Witherable1 } from './Witherable'
 
-export class None<A> {
-  static value: Option<never> = new None()
-  readonly _tag: 'None' = 'None'
-  readonly _A!: A
-  readonly _URI!: URI
-  private constructor() {}
-  /**
-   * Takes a function `f` and an `Option` of `A`. Maps `f` either on `None` or `Some`, Option's data constructors. If it
-   * maps on `Some` then it will apply the `f` on `Some`'s value, if it maps on `None` it will return `None`.
-   *
-   * @example
-   * assert.deepEqual(some(1).map(n => n * 2), some(2))
-   */
-  map<B>(f: (a: A) => B): Option<B> {
-    return none
-  }
-  /**
-   * Maps `f` over this `Option`'s value. If the value returned from `f` is null or undefined, returns `None`
-   *
-   * @example
-   * import { none, some } from 'fp-ts/lib/Option'
-   *
-   * interface Foo {
-   *   bar?: {
-   *     baz?: string
-   *   }
-   * }
-   *
-   * assert.deepEqual(
-   *   some<Foo>({ bar: { baz: 'quux' } })
-   *     .mapNullable(foo => foo.bar)
-   *     .mapNullable(bar => bar.baz),
-   *   some('quux')
-   * )
-   * assert.deepEqual(
-   *   some<Foo>({ bar: {} })
-   *     .mapNullable(foo => foo.bar)
-   *     .mapNullable(bar => bar.baz),
-   *   none
-   * )
-   * assert.deepEqual(
-   *   some<Foo>({})
-   *     .mapNullable(foo => foo.bar)
-   *     .mapNullable(bar => bar.baz),
-   *   none
-   * )
-   */
-  mapNullable<B>(f: (a: A) => B | null | undefined): Option<B> {
-    return none
-  }
+// -------------------------------------------------------------------------------------
+// model
+// -------------------------------------------------------------------------------------
 
-  /**
-   * `ap`, some may also call it "apply". Takes a function `fab` that is in the context of `Option`, and applies that
-   * function to this `Option`'s value. If the `Option` calling `ap` is `none` it will return `none`.
-   *
-   * @example
-   * assert.deepEqual(some(2).ap(some(x => x + 1)), some(3))
-   * assert.deepEqual(none.ap(some(x => x + 1)), none)
-   */
-  ap<B>(fab: Option<(a: A) => B>): Option<B> {
-    return none
-  }
-  /**
-   * Similar to `ap` but instead of taking a function it takes `some` value or `none`, then applies this `Option`'s
-   * wrapped function to the `some` or `none`. If the `Option` calling `ap_` is `none` it will return `none`.
-   *
-   * @example
-   * assert.deepEqual(some(x => x + 1).ap_(some(2)), some(3))
-   * assert.deepEqual(none.ap_(some(2)), none)
-   */
-  ap_<B, C>(this: Option<(b: B) => C>, fb: Option<B>): Option<C> {
-    return fb.ap(this)
-  }
-  /**
-   * Returns the result of applying f to this `Option`'s value if this `Option` is nonempty. Returns `None` if this
-   * `Option` is empty. Slightly different from `map` in that `f` is expected to return an `Option` (which could be
-   * `None`)
-   */
-  chain<B>(f: (a: A) => Option<B>): Option<B> {
-    return none
-  }
-  reduce<B>(b: B, f: (b: B, a: A) => B): B {
-    return b
-  }
-  /**
-   * `alt` short for alternative, takes another `Option`. If this `Option` is a `Some` type then it will be returned, if
-   * it is a `None` then it will return the next `Some` if it exist. If both are `None` then it will return `none`.
-   *
-   * @example
-   * const someFn = (o: Option<number>) => o.alt(some(4))
-   * assert.deepEqual(someFn(some(2)), some(2))
-   * assert.deepEqual(someFn(none), none)
-   */
-  alt(fa: Option<A>): Option<A> {
-    return fa
-  }
-
-  /**
-   * Lazy version of {@link alt}
-   * @since 1.6.0
-   * @param {Lazy<Option<A>>} fa - thunk
-   * @example
-   * assert.deepEqual(some(1).orElse(() => some(2)), some(1))
-   * @returns {Option<A>}
-   */
-  orElse(fa: Lazy<Option<A>>): Option<A> {
-    return fa()
-  }
-
-  extend<B>(f: (ea: Option<A>) => B): Option<B> {
-    return none
-  }
-  /**
-   * Applies a function to each case in the data structure
-   *
-   * @example
-   * import { none, some } from 'fp-ts/lib/Option'
-   *
-   * assert.strictEqual(some(1).fold('none', a => `some: ${a}`), 'some: 1')
-   * assert.strictEqual(none.fold('none', a => `some: ${a}`), 'none')
-   */
-  fold<B>(b: B, whenSome: (a: A) => B): B {
-    return b
-  }
-  /** Lazy version of {@link fold} */
-  foldL<B>(whenNone: () => B, whenSome: (a: A) => B): B {
-    return whenNone()
-  }
-  /**
-   * Returns the value from this `Some` or the given argument if this is a `None`
-   *
-   * @example
-   * import { Option, none, some } from 'fp-ts/lib/Option'
-   *
-   * assert.strictEqual(some(1).getOrElse(0), 1)
-   * assert.strictEqual((none as Option<number>).getOrElse(0), 0)
-   */
-  getOrElse(a: A): A {
-    return a
-  }
-  /** Lazy version of {@link getOrElse} */
-  getOrElseL(f: () => A): A {
-    return f()
-  }
-  /** Returns the value from this `Some` or `null` if this is a `None` */
-  toNullable(): A | null {
-    return null
-  }
-  /** Returns the value from this `Some` or `undefined` if this is a `None` */
-  toUndefined(): A | undefined {
-    return undefined
-  }
-  inspect(): string {
-    return this.toString()
-  }
-  toString(): string {
-    return 'none'
-  }
-  /** Returns `true` if the option has an element that is equal (as determined by `S`) to `a`, `false` otherwise */
-  contains(S: Setoid<A>, a: A): boolean {
-    return false
-  }
-  /** Returns `true` if the option is `None`, `false` otherwise */
-  isNone(): this is None<A> {
-    return true
-  }
-  /** Returns `true` if the option is an instance of `Some`, `false` otherwise */
-  isSome(): this is Some<A> {
-    return false
-  }
-  /**
-   * Returns `true` if this option is non empty and the predicate `p` returns `true` when applied to this Option's value
-   */
-  exists(p: (a: A) => boolean): boolean {
-    return false
-  }
-  /**
-   * Returns this option if it is non empty and the predicate `p` return `true` when applied to this Option's value.
-   * Otherwise returns `None`
-   */
-  filter(p: Predicate<A>): Option<A> {
-    return none
-  }
-  /**
-   * Returns this option refined as `Option<B>` if it is non empty and the `refinement` returns `true` when applied to
-   * this Option's value. Otherwise returns `None`
-   * @since 1.3.0
-   */
-  refine<B extends A>(refinement: Refinement<A, B>): Option<B> {
-    return none
-  }
+/**
+ * @category model
+ * @since 2.0.0
+ */
+export interface None {
+  readonly _tag: 'None'
 }
 
 /**
- * @constant
- * @since 1.0.0
+ * @category model
+ * @since 2.0.0
  */
-export const none: Option<never> = None.value
-
-export class Some<A> {
-  readonly _tag: 'Some' = 'Some'
-  readonly _A!: A
-  readonly _URI!: URI
-  constructor(readonly value: A) {}
-  map<B>(f: (a: A) => B): Option<B> {
-    return new Some(f(this.value))
-  }
-  mapNullable<B>(f: (a: A) => B | null | undefined): Option<B> {
-    return fromNullable(f(this.value))
-  }
-  ap<B>(fab: Option<(a: A) => B>): Option<B> {
-    return fab.isNone() ? none : new Some(fab.value(this.value))
-  }
-  ap_<B, C>(this: Option<(b: B) => C>, fb: Option<B>): Option<C> {
-    return fb.ap(this)
-  }
-  chain<B>(f: (a: A) => Option<B>): Option<B> {
-    return f(this.value)
-  }
-  reduce<B>(b: B, f: (b: B, a: A) => B): B {
-    return f(b, this.value)
-  }
-  alt(fa: Option<A>): Option<A> {
-    return this
-  }
-  orElse(fa: Lazy<Option<A>>): Option<A> {
-    return this
-  }
-  extend<B>(f: (ea: Option<A>) => B): Option<B> {
-    return new Some(f(this))
-  }
-  fold<B>(b: B, whenSome: (a: A) => B): B {
-    return whenSome(this.value)
-  }
-  foldL<B>(whenNone: () => B, whenSome: (a: A) => B): B {
-    return whenSome(this.value)
-  }
-  getOrElse(a: A): A {
-    return this.value
-  }
-  getOrElseL(f: () => A): A {
-    return this.value
-  }
-  toNullable(): A | null {
-    return this.value
-  }
-  toUndefined(): A | undefined {
-    return this.value
-  }
-  inspect(): string {
-    return this.toString()
-  }
-  toString(): string {
-    return `some(${toString(this.value)})`
-  }
-  contains(S: Setoid<A>, a: A): boolean {
-    return S.equals(this.value, a)
-  }
-  isNone(): this is None<A> {
-    return false
-  }
-  isSome(): this is Some<A> {
-    return true
-  }
-  exists(p: (a: A) => boolean): boolean {
-    return p(this.value)
-  }
-  filter(p: Predicate<A>): Option<A> {
-    return this.exists(p) ? this : none
-  }
-  refine<B extends A>(refinement: Refinement<A, B>): Option<B> {
-    return this.filter(refinement) as Option<B>
-  }
+export interface Some<A> {
+  readonly _tag: 'Some'
+  readonly value: A
 }
 
 /**
+ * @category model
+ * @since 2.0.0
+ */
+export type Option<A> = None | Some<A>
+
+// -------------------------------------------------------------------------------------
+// guards
+// -------------------------------------------------------------------------------------
+
+/**
+ * Returns `true` if the option is an instance of `Some`, `false` otherwise.
  *
  * @example
- * import { none, some, getSetoid } from 'fp-ts/lib/Option'
- * import { setoidNumber } from 'fp-ts/lib/Setoid'
+ * import { some, none, isSome } from 'fp-ts/Option'
  *
- * const S = getSetoid(setoidNumber)
- * assert.strictEqual(S.equals(none, none), true)
- * assert.strictEqual(S.equals(none, some(1)), false)
- * assert.strictEqual(S.equals(some(1), none), false)
- * assert.strictEqual(S.equals(some(1), some(2)), false)
- * assert.strictEqual(S.equals(some(1), some(1)), true)
+ * assert.strictEqual(isSome(some(1)), true)
+ * assert.strictEqual(isSome(none), false)
  *
- * * @function
- * @since 1.0.0
+ * @category guards
+ * @since 2.0.0
  */
-export const getSetoid = <A>(S: Setoid<A>): Setoid<Option<A>> => {
-  return {
-    equals: (x, y) => (x.isNone() ? y.isNone() : y.isNone() ? false : S.equals(x.value, y.value))
+export const isSome = <A>(fa: Option<A>): fa is Some<A> => fa._tag === 'Some'
+
+/**
+ * Returns `true` if the option is `None`, `false` otherwise.
+ *
+ * @example
+ * import { some, none, isNone } from 'fp-ts/Option'
+ *
+ * assert.strictEqual(isNone(some(1)), false)
+ * assert.strictEqual(isNone(none), true)
+ *
+ * @category guards
+ * @since 2.0.0
+ */
+export const isNone = <A>(fa: Option<A>): fa is None => fa._tag === 'None'
+
+// -------------------------------------------------------------------------------------
+// constructors
+// -------------------------------------------------------------------------------------
+
+/**
+ * `None` doesn't have a constructor, instead you can use it directly as a value. Represents a missing value.
+ *
+ * @category constructors
+ * @since 2.0.0
+ */
+export const none: Option<never> = { _tag: 'None' }
+
+/**
+ * Constructs a `Some`. Represents an optional value that exists.
+ *
+ * @category constructors
+ * @since 2.0.0
+ */
+export const some = <A>(a: A): Option<A> => ({ _tag: 'Some', value: a })
+
+/**
+ * Constructs a new `Option` from a nullable type. If the value is `null` or `undefined`, returns `None`, otherwise
+ * returns the value wrapped in a `Some`.
+ *
+ * @example
+ * import { none, some, fromNullable } from 'fp-ts/Option'
+ *
+ * assert.deepStrictEqual(fromNullable(undefined), none)
+ * assert.deepStrictEqual(fromNullable(null), none)
+ * assert.deepStrictEqual(fromNullable(1), some(1))
+ *
+ * @category constructors
+ * @since 2.0.0
+ */
+export function fromNullable<A>(a: A): Option<NonNullable<A>> {
+  return a == null ? none : some(a as NonNullable<A>)
+}
+
+/**
+ * Returns a *smart constructor* based on the given predicate.
+ *
+ * @example
+ * import { none, some, fromPredicate } from 'fp-ts/Option'
+ *
+ * const getOption = fromPredicate((n: number) => n >= 0)
+ *
+ * assert.deepStrictEqual(getOption(-1), none)
+ * assert.deepStrictEqual(getOption(1), some(1))
+ *
+ * @category constructors
+ * @since 2.0.0
+ */
+export function fromPredicate<A, B extends A>(refinement: Refinement<A, B>): (a: A) => Option<B>
+export function fromPredicate<A>(predicate: Predicate<A>): (a: A) => Option<A>
+export function fromPredicate<A>(predicate: Predicate<A>): (a: A) => Option<A> {
+  return (a) => (predicate(a) ? some(a) : none)
+}
+
+/**
+ * Transforms an exception into an `Option`. If `f` throws, returns `None`, otherwise returns the output wrapped in a
+ * `Some`.
+ *
+ * @example
+ * import { none, some, tryCatch } from 'fp-ts/Option'
+ *
+ * assert.deepStrictEqual(
+ *   tryCatch(() => {
+ *     throw new Error()
+ *   }),
+ *   none
+ * )
+ * assert.deepStrictEqual(tryCatch(() => 1), some(1))
+ *
+ * @category constructors
+ * @since 2.0.0
+ */
+export function tryCatch<A>(f: Lazy<A>): Option<A> {
+  try {
+    return some(f())
+  } catch (e) {
+    return none
   }
 }
 
+/**
+ * Returns the `Left` value of an `Either` if possible.
+ *
+ * @example
+ * import { getLeft, none, some } from 'fp-ts/Option'
+ * import { right, left } from 'fp-ts/Either'
+ *
+ * assert.deepStrictEqual(getLeft(right(1)), none)
+ * assert.deepStrictEqual(getLeft(left('a')), some('a'))
+ *
+ * @category constructors
+ * @since 2.0.0
+ */
+export function getLeft<E, A>(ma: Either<E, A>): Option<E> {
+  return ma._tag === 'Right' ? none : some(ma.left)
+}
+
+/**
+ * Returns the `Right` value of an `Either` if possible.
+ *
+ * @example
+ * import { getRight, none, some } from 'fp-ts/Option'
+ * import { right, left } from 'fp-ts/Either'
+ *
+ * assert.deepStrictEqual(getRight(right(1)), some(1))
+ * assert.deepStrictEqual(getRight(left('a')), none)
+ *
+ * @category constructors
+ * @since 2.0.0
+ */
+export function getRight<E, A>(ma: Either<E, A>): Option<A> {
+  return ma._tag === 'Left' ? none : some(ma.right)
+}
+
+/**
+ * Transforms an `Either` to an `Option` discarding the error.
+ *
+ * Alias of [getRight](#getRight)
+ *
+ * Derivable from `MonadThrow`.
+ *
+ * @category constructors
+ * @since 2.0.0
+ */
+export const fromEither: <E, A>(ma: Either<E, A>) => Option<A> = getRight
+
+// -------------------------------------------------------------------------------------
+// destructors
+// -------------------------------------------------------------------------------------
+
+/**
+ * Takes a (lazy) default value, a function, and an `Option` value, if the `Option` value is `None` the default value is
+ * returned, otherwise the function is applied to the value inside the `Some` and the result is returned.
+ *
+ * @example
+ * import { some, none, fold } from 'fp-ts/Option'
+ * import { pipe } from 'fp-ts/function'
+ *
+ * assert.strictEqual(
+ *   pipe(
+ *     some(1),
+ *     fold(() => 'a none', a => `a some containing ${a}`)
+ *   ),
+ *   'a some containing 1'
+ * )
+ *
+ * assert.strictEqual(
+ *   pipe(
+ *     none,
+ *     fold(() => 'a none', a => `a some containing ${a}`)
+ *   ),
+ *   'a none'
+ * )
+ *
+ * @category destructors
+ * @since 2.0.0
+ */
+export function fold<A, B>(onNone: Lazy<B>, onSome: (a: A) => B): (ma: Option<A>) => B {
+  return (ma) => (isNone(ma) ? onNone() : onSome(ma.value))
+}
+
+/**
+ * Extracts the value out of the structure, if it exists. Otherwise returns `null`.
+ *
+ * @example
+ * import { some, none, toNullable } from 'fp-ts/Option'
+ * import { pipe } from 'fp-ts/function'
+ *
+ * assert.strictEqual(
+ *   pipe(
+ *     some(1),
+ *     toNullable
+ *   ),
+ *   1
+ * )
+ * assert.strictEqual(
+ *   pipe(
+ *     none,
+ *     toNullable
+ *   ),
+ *   null
+ * )
+ *
+ * @category destructors
+ * @since 2.0.0
+ */
+export function toNullable<A>(ma: Option<A>): A | null {
+  return isNone(ma) ? null : ma.value
+}
+
+/**
+ * Extracts the value out of the structure, if it exists. Otherwise returns `undefined`.
+ *
+ * @example
+ * import { some, none, toUndefined } from 'fp-ts/Option'
+ * import { pipe } from 'fp-ts/function'
+ *
+ * assert.strictEqual(
+ *   pipe(
+ *     some(1),
+ *     toUndefined
+ *   ),
+ *   1
+ * )
+ * assert.strictEqual(
+ *   pipe(
+ *     none,
+ *     toUndefined
+ *   ),
+ *   undefined
+ * )
+ *
+ * @category destructors
+ * @since 2.0.0
+ */
+export function toUndefined<A>(ma: Option<A>): A | undefined {
+  return isNone(ma) ? undefined : ma.value
+}
+
+/**
+ * Less strict version of [`getOrElse`](#getOrElse).
+ *
+ * @category destructors
+ * @since 2.6.0
+ */
+export const getOrElseW = <B>(onNone: Lazy<B>) => <A>(ma: Option<A>): A | B => (isNone(ma) ? onNone() : ma.value)
+
+/**
+ * Extracts the value out of the structure, if it exists. Otherwise returns the given default value
+ *
+ * @example
+ * import { some, none, getOrElse } from 'fp-ts/Option'
+ * import { pipe } from 'fp-ts/function'
+ *
+ * assert.strictEqual(
+ *   pipe(
+ *     some(1),
+ *     getOrElse(() => 0)
+ *   ),
+ *   1
+ * )
+ * assert.strictEqual(
+ *   pipe(
+ *     none,
+ *     getOrElse(() => 0)
+ *   ),
+ *   0
+ * )
+ *
+ * @category destructors
+ * @since 2.0.0
+ */
+export const getOrElse: <A>(onNone: Lazy<A>) => (ma: Option<A>) => A = getOrElseW
+
+// -------------------------------------------------------------------------------------
+// combinators
+// -------------------------------------------------------------------------------------
+
+/**
+ * Returns a *smart constructor* from a function that returns a nullable value.
+ *
+ * @example
+ * import { fromNullableK, none, some } from 'fp-ts/Option'
+ *
+ * const f = (s: string): number | undefined => {
+ *   const n = parseFloat(s)
+ *   return isNaN(n) ? undefined : n
+ * }
+ *
+ * const g = fromNullableK(f)
+ *
+ * assert.deepStrictEqual(g('1'), some(1))
+ * assert.deepStrictEqual(g('a'), none)
+ *
+ * @category combinators
+ * @since 2.9.0
+ */
+export function fromNullableK<A extends ReadonlyArray<unknown>, B>(
+  f: (...a: A) => B | null | undefined
+): (...a: A) => Option<NonNullable<B>> {
+  return (...a) => fromNullable(f(...a))
+}
+
+/**
+ * @category combinators
+ * @since 2.0.0
+ * @deprecated
+ */
+export const mapNullable = chainNullableK
+
+/**
+ * This is `chain` + `fromNullable`, useful when working with optional values.
+ *
+ * @example
+ * import { some, none, fromNullable, chainNullableK } from 'fp-ts/Option'
+ * import { pipe } from 'fp-ts/function'
+ *
+ * interface Employee {
+ *   company?: {
+ *     address?: {
+ *       street?: {
+ *         name?: string
+ *       }
+ *     }
+ *   }
+ * }
+ *
+ * const employee1: Employee = { company: { address: { street: { name: 'high street' } } } }
+ *
+ * assert.deepStrictEqual(
+ *   pipe(
+ *     fromNullable(employee1.company),
+ *     chainNullableK(company => company.address),
+ *     chainNullableK(address => address.street),
+ *     chainNullableK(street => street.name)
+ *   ),
+ *   some('high street')
+ * )
+ *
+ * const employee2: Employee = { company: { address: { street: {} } } }
+ *
+ * assert.deepStrictEqual(
+ *   pipe(
+ *     fromNullable(employee2.company),
+ *     chainNullableK(company => company.address),
+ *     chainNullableK(address => address.street),
+ *     chainNullableK(street => street.name)
+ *   ),
+ *   none
+ * )
+ *
+ * @category combinators
+ * @since 2.9.0
+ */
+export function chainNullableK<A, B>(f: (a: A) => B | null | undefined): (ma: Option<A>) => Option<B> {
+  return (ma) => (isNone(ma) ? none : fromNullable(f(ma.value)))
+}
+
+// -------------------------------------------------------------------------------------
+// non-pipeables
+// -------------------------------------------------------------------------------------
+
+const map_: Monad1<URI>['map'] = (fa, f) => pipe(fa, map(f))
+const ap_: Monad1<URI>['ap'] = (fab, fa) => pipe(fab, ap(fa))
+const chain_: Monad1<URI>['chain'] = (ma, f) => pipe(ma, chain(f))
+const reduce_: Foldable1<URI>['reduce'] = (fa, b, f) => pipe(fa, reduce(b, f))
+const foldMap_: Foldable1<URI>['foldMap'] = (M) => {
+  const foldMapM = foldMap(M)
+  return (fa, f) => pipe(fa, foldMapM(f))
+}
+const reduceRight_: Foldable1<URI>['reduceRight'] = (fa, b, f) => pipe(fa, reduceRight(b, f))
+const traverse_: Traversable1<URI>['traverse'] = <F>(
+  F: ApplicativeHKT<F>
+): (<A, B>(ta: Option<A>, f: (a: A) => HKT<F, B>) => HKT<F, Option<B>>) => {
+  const traverseF = traverse(F)
+  return (ta, f) => pipe(ta, traverseF(f))
+}
+/* istanbul ignore next */
+const alt_: Alt1<URI>['alt'] = (fa, that) => pipe(fa, alt(that))
+const filter_: Filterable1<URI>['filter'] = <A>(fa: Option<A>, predicate: Predicate<A>): Option<A> =>
+  pipe(fa, filter(predicate))
+/* istanbul ignore next */
+const filterMap_: Filterable1<URI>['filterMap'] = (fa, f) => pipe(fa, filterMap(f))
+/* istanbul ignore next */
+const extend_: Extend1<URI>['extend'] = (wa, f) => pipe(wa, extend(f))
+/* istanbul ignore next */
+const partition_: Filterable1<URI>['partition'] = <A>(
+  fa: Option<A>,
+  predicate: Predicate<A>
+): Separated<Option<A>, Option<A>> => pipe(fa, partition(predicate))
+/* istanbul ignore next */
+const partitionMap_: Filterable1<URI>['partitionMap'] = (fa, f) => pipe(fa, partitionMap(f))
+/* istanbul ignore next */
+const wither_: Witherable1<URI>['wither'] = <F>(
+  F: ApplicativeHKT<F>
+): (<A, B>(fa: Option<A>, f: (a: A) => HKT<F, Option<B>>) => HKT<F, Option<B>>) => {
+  const witherF = wither(F)
+  return (fa, f) => pipe(fa, witherF(f))
+}
+/* istanbul ignore next */
+const wilt_: Witherable1<URI>['wilt'] = <F>(
+  F: ApplicativeHKT<F>
+): (<A, B, C>(fa: Option<A>, f: (a: A) => HKT<F, Either<B, C>>) => HKT<F, Separated<Option<B>, Option<C>>>) => {
+  const wiltF = wilt(F)
+  return (fa, f) => pipe(fa, wiltF(f))
+}
+
+// -------------------------------------------------------------------------------------
+// pipeables
+// -------------------------------------------------------------------------------------
+
+/**
+ * `map` can be used to turn functions `(a: A) => B` into functions `(fa: F<A>) => F<B>` whose argument and return types
+ * use the type constructor `F` to represent some computational context.
+ *
+ * @category Functor
+ * @since 2.0.0
+ */
+export const map: <A, B>(f: (a: A) => B) => (fa: Option<A>) => Option<B> = (f) => (fa) =>
+  isNone(fa) ? none : some(f(fa.value))
+
+/**
+ * Apply a function to an argument under a type constructor.
+ *
+ * @category Apply
+ * @since 2.0.0
+ */
+export const ap: <A>(fa: Option<A>) => <B>(fab: Option<(a: A) => B>) => Option<B> = (fa) => (fab) =>
+  isNone(fab) ? none : isNone(fa) ? none : some(fab.value(fa.value))
+
+/**
+ * Combine two effectful actions, keeping only the result of the first.
+ *
+ * Derivable from `Apply`.
+ *
+ * @category combinators
+ * @since 2.0.0
+ */
+export const apFirst: <B>(fb: Option<B>) => <A>(fa: Option<A>) => Option<A> = (fb) =>
+  flow(
+    map((a) => () => a),
+    ap(fb)
+  )
+
+/**
+ * Combine two effectful actions, keeping only the result of the second.
+ *
+ * Derivable from `Apply`.
+ *
+ * @category combinators
+ * @since 2.0.0
+ */
+export const apSecond = <B>(fb: Option<B>): (<A>(fa: Option<A>) => Option<B>) =>
+  flow(
+    map(() => (b: B) => b),
+    ap(fb)
+  )
+
+/**
+ * Wrap a value into the type constructor.
+ *
+ * @category Applicative
+ * @since 2.7.0
+ */
+export const of: Applicative1<URI>['of'] = some
+
+/**
+ * Composes computations in sequence, using the return value of one computation to determine the next computation.
+ *
+ * @category Monad
+ * @since 2.0.0
+ */
+export const chain: <A, B>(f: (a: A) => Option<B>) => (ma: Option<A>) => Option<B> = (f) => (ma) =>
+  isNone(ma) ? none : f(ma.value)
+
+/**
+ * Composes computations in sequence, using the return value of one computation to determine the next computation and
+ * keeping only the result of the first.
+ *
+ * Derivable from `Monad`.
+ *
+ * @category combinators
+ * @since 2.0.0
+ */
+export const chainFirst: <A, B>(f: (a: A) => Option<B>) => (ma: Option<A>) => Option<A> = (f) =>
+  chain((a) =>
+    pipe(
+      f(a),
+      map(() => a)
+    )
+  )
+
+/**
+ * Derivable from `Monad`.
+ *
+ * @category combinators
+ * @since 2.0.0
+ */
+export const flatten: <A>(mma: Option<Option<A>>) => Option<A> =
+  /*#__PURE__*/
+  chain(identity)
+
+/**
+ * Less strict version of [`alt`](#alt).
+ *
+ * @category Alt
+ * @since 2.9.0
+ */
+export const altW: <B>(that: Lazy<Option<B>>) => <A>(fa: Option<A>) => Option<A | B> = (that) => (fa) =>
+  isNone(fa) ? that() : fa
+
+/**
+ * Identifies an associative operation on a type constructor. It is similar to `Semigroup`, except that it applies to
+ * types of kind `* -> *`.
+ *
+ * In case of `Option` returns the left-most non-`None` value.
+ *
+ * @example
+ * import * as O from 'fp-ts/Option'
+ * import { pipe } from 'fp-ts/function'
+ *
+ * assert.deepStrictEqual(
+ *   pipe(
+ *     O.some('a'),
+ *     O.alt(() => O.some('b'))
+ *   ),
+ *   O.some('a')
+ * )
+ * assert.deepStrictEqual(
+ *   pipe(
+ *     O.none,
+ *     O.alt(() => O.some('b'))
+ *   ),
+ *   O.some('b')
+ * )
+ *
+ * @category Alt
+ * @since 2.0.0
+ */
+export const alt: <A>(that: Lazy<Option<A>>) => (fa: Option<A>) => Option<A> = altW
+
+/**
+ * @category Alternative
+ * @since 2.7.0
+ */
+export const zero: Alternative1<URI>['zero'] = () => none
+
+/**
+ * @category MonadThrow
+ * @since 2.7.0
+ */
+export const throwError: MonadThrow1<URI>['throwError'] = () => none
+
+/**
+ * @category Extend
+ * @since 2.0.0
+ */
+export const extend: <A, B>(f: (wa: Option<A>) => B) => (wa: Option<A>) => Option<B> = (f) => (wa) =>
+  isNone(wa) ? none : some(f(wa))
+
+/**
+ * Derivable from `Extend`.
+ *
+ * @category combinators
+ * @since 2.0.0
+ */
+export const duplicate: <A>(ma: Option<A>) => Option<Option<A>> =
+  /*#__PURE__*/
+  extend(identity)
+
+/**
+ * @category Foldable
+ * @since 2.0.0
+ */
+export const reduce: <A, B>(b: B, f: (b: B, a: A) => B) => (fa: Option<A>) => B = (b, f) => (fa) =>
+  isNone(fa) ? b : f(b, fa.value)
+
+/**
+ * @category Foldable
+ * @since 2.0.0
+ */
+export const foldMap: <M>(M: Monoid<M>) => <A>(f: (a: A) => M) => (fa: Option<A>) => M = (M) => (f) => (fa) =>
+  isNone(fa) ? M.empty : f(fa.value)
+
+/**
+ * @category Foldable
+ * @since 2.0.0
+ */
+export const reduceRight: <A, B>(b: B, f: (a: A, b: B) => B) => (fa: Option<A>) => B = (b, f) => (fa) =>
+  isNone(fa) ? b : f(fa.value, b)
+
+/**
+ * @category Compactable
+ * @since 2.0.0
+ */
+export const compact: <A>(fa: Option<Option<A>>) => Option<A> = flatten
+
+const defaultSeparate = { left: none, right: none }
+
+/**
+ * @category Compactable
+ * @since 2.0.0
+ */
+export const separate: <A, B>(ma: Option<Either<A, B>>) => Separated<Option<A>, Option<B>> = (ma) => {
+  const o = pipe(
+    ma,
+    map((e) => ({
+      left: getLeft(e),
+      right: getRight(e)
+    }))
+  )
+  return isNone(o) ? defaultSeparate : o.value
+}
+
+/**
+ * @category Filterable
+ * @since 2.0.0
+ */
+export const filter: {
+  <A, B extends A>(refinement: Refinement<A, B>): (fa: Option<A>) => Option<B>
+  <A>(predicate: Predicate<A>): (fa: Option<A>) => Option<A>
+} = <A>(predicate: Predicate<A>) => (fa: Option<A>) => (isNone(fa) ? none : predicate(fa.value) ? fa : none)
+
+/**
+ * @category Filterable
+ * @since 2.0.0
+ */
+export const filterMap: <A, B>(f: (a: A) => Option<B>) => (fa: Option<A>) => Option<B> = (f) => (fa) =>
+  isNone(fa) ? none : f(fa.value)
+
+/**
+ * @category Filterable
+ * @since 2.0.0
+ */
+export const partition: {
+  <A, B extends A>(refinement: Refinement<A, B>): (fa: Option<A>) => Separated<Option<A>, Option<B>>
+  <A>(predicate: Predicate<A>): (fa: Option<A>) => Separated<Option<A>, Option<A>>
+} = <A>(predicate: Predicate<A>) => (fa: Option<A>) => {
+  return {
+    left: filter_(fa, (a) => !predicate(a)),
+    right: filter_(fa, predicate)
+  }
+}
+
+/**
+ * @category Filterable
+ * @since 2.0.0
+ */
+export const partitionMap: <A, B, C>(
+  f: (a: A) => Either<B, C>
+) => (fa: Option<A>) => Separated<Option<B>, Option<C>> = (f) => flow(map(f), separate)
+
+/**
+ * @category Traversable
+ * @since 2.6.3
+ */
+export const traverse: PipeableTraverse1<URI> = <F>(F: ApplicativeHKT<F>) => <A, B>(f: (a: A) => HKT<F, B>) => (
+  ta: Option<A>
+): HKT<F, Option<B>> => (isNone(ta) ? F.of(none) : F.map(f(ta.value), some))
+
+/**
+ * @category Traversable
+ * @since 2.6.3
+ */
+export const sequence: Traversable1<URI>['sequence'] = <F>(F: ApplicativeHKT<F>) => <A>(
+  ta: Option<HKT<F, A>>
+): HKT<F, Option<A>> => (isNone(ta) ? F.of(none) : F.map(ta.value, some))
+
+/**
+ * @category Witherable
+ * @since 2.6.5
+ */
+export const wither: PipeableWither1<URI> = <F>(F: ApplicativeHKT<F>) => <A, B>(f: (a: A) => HKT<F, Option<B>>) => (
+  fa: Option<A>
+): HKT<F, Option<B>> => (isNone(fa) ? F.of(none) : f(fa.value))
+
+/**
+ * @category Witherable
+ * @since 2.6.5
+ */
+export const wilt: PipeableWilt1<URI> = <F>(F: ApplicativeHKT<F>) => <A, B, C>(f: (a: A) => HKT<F, Either<B, C>>) => (
+  fa: Option<A>
+): HKT<F, Separated<Option<B>, Option<C>>> => {
+  return isNone(fa)
+    ? F.of({
+        left: none,
+        right: none
+      })
+    : F.map(f(fa.value), (e) => ({
+        left: getLeft(e),
+        right: getRight(e)
+      }))
+}
+
+// -------------------------------------------------------------------------------------
+// instances
+// -------------------------------------------------------------------------------------
+
+/**
+ * @category instances
+ * @since 2.0.0
+ */
+export const URI = 'Option'
+
+/**
+ * @category instances
+ * @since 2.0.0
+ */
+export type URI = typeof URI
+
+declare module './HKT' {
+  interface URItoKind<A> {
+    readonly [URI]: Option<A>
+  }
+}
+
+/**
+ * @category instances
+ * @since 2.0.0
+ */
+export function getShow<A>(S: Show<A>): Show<Option<A>> {
+  return {
+    show: (ma) => (isNone(ma) ? 'none' : `some(${S.show(ma.value)})`)
+  }
+}
+
+/**
+ * @example
+ * import { none, some, getEq } from 'fp-ts/Option'
+ * import { eqNumber } from 'fp-ts/Eq'
+ *
+ * const E = getEq(eqNumber)
+ * assert.strictEqual(E.equals(none, none), true)
+ * assert.strictEqual(E.equals(none, some(1)), false)
+ * assert.strictEqual(E.equals(some(1), none), false)
+ * assert.strictEqual(E.equals(some(1), some(2)), false)
+ * assert.strictEqual(E.equals(some(1), some(1)), true)
+ *
+ * @category instances
+ * @since 2.0.0
+ */
+export function getEq<A>(E: Eq<A>): Eq<Option<A>> {
+  return {
+    equals: (x, y) => x === y || (isNone(x) ? isNone(y) : isNone(y) ? false : E.equals(x.value, y.value))
+  }
+}
 /**
  * The `Ord` instance allows `Option` values to be compared with
  * `compare`, whenever there is an `Ord` instance for
@@ -422,8 +831,8 @@ export const getSetoid = <A>(S: Setoid<A>): Setoid<Option<A>> => {
  *
  *
  * @example
- * import { none, some, getOrd } from 'fp-ts/lib/Option'
- * import { ordNumber } from 'fp-ts/lib/Ord'
+ * import { none, some, getOrd } from 'fp-ts/Option'
+ * import { ordNumber } from 'fp-ts/Ord'
  *
  * const O = getOrd(ordNumber)
  * assert.strictEqual(O.compare(none, none), 0)
@@ -432,80 +841,52 @@ export const getSetoid = <A>(S: Setoid<A>): Setoid<Option<A>> => {
  * assert.strictEqual(O.compare(some(1), some(2)), -1)
  * assert.strictEqual(O.compare(some(1), some(1)), 0)
  *
- * @function
- * @since 1.2.0
+ * @category instances
+ * @since 2.0.0
  */
-export const getOrd = <A>(O: Ord<A>): Ord<Option<A>> => {
+export function getOrd<A>(O: Ord<A>): Ord<Option<A>> {
   return {
-    ...getSetoid(O),
-    compare: (x, y) => (x.isSome() ? (y.isSome() ? O.compare(x.value, y.value) : 1) : y.isSome() ? -1 : 0)
+    equals: getEq(O).equals,
+    compare: (x, y) => (x === y ? 0 : isSome(x) ? (isSome(y) ? O.compare(x.value, y.value) : 1) : -1)
   }
 }
 
-const map = <A, B>(fa: Option<A>, f: (a: A) => B): Option<B> => {
-  return fa.map(f)
-}
-
-const of = <A>(a: A): Option<A> => {
-  return new Some(a)
-}
-
-const ap = <A, B>(fab: Option<(a: A) => B>, fa: Option<A>): Option<B> => {
-  return fa.ap(fab)
-}
-
-const chain = <A, B>(fa: Option<A>, f: (a: A) => Option<B>): Option<B> => {
-  return fa.chain(f)
-}
-
-const reduce = <A, B>(fa: Option<A>, b: B, f: (b: B, a: A) => B): B => {
-  return fa.reduce(b, f)
-}
-
-const traverse = <F>(F: Applicative<F>) => <A, B>(ta: Option<A>, f: (a: A) => HKT<F, B>): HKT<F, Option<B>> => {
-  return ta.isNone() ? F.of(none) : F.map(f(ta.value), some)
-}
-
-const alt = <A>(fx: Option<A>, fy: Option<A>): Option<A> => {
-  return fx.alt(fy)
-}
-
-const extend = <A, B>(ea: Option<A>, f: (ea: Option<A>) => B): Option<B> => {
-  return ea.extend(f)
-}
-
-const zero = <A>(): Option<A> => {
-  return none
-}
-
 /**
- * {@link Apply} semigroup
+ * `Apply` semigroup
+ *
+ * | x       | y       | concat(x, y)       |
+ * | ------- | ------- | ------------------ |
+ * | none    | none    | none               |
+ * | some(a) | none    | none               |
+ * | none    | some(a) | none               |
+ * | some(a) | some(b) | some(concat(a, b)) |
  *
  * @example
- * import { semigroupSum } from 'fp-ts/lib/Semigroup'
+ * import { getApplySemigroup, some, none } from 'fp-ts/Option'
+ * import { semigroupSum } from 'fp-ts/Semigroup'
  *
- * const S = getSemigroup(semigroupSum)
- * assert.deepEqual(S.concat(none, none), none)
- * assert.deepEqual(S.concat(some(1), none), none)
- * assert.deepEqual(S.concat(none, some(1)), none)
- * assert.deepEqual(S.concat(some(1), some(2)), some(3))
+ * const S = getApplySemigroup(semigroupSum)
+ * assert.deepStrictEqual(S.concat(none, none), none)
+ * assert.deepStrictEqual(S.concat(some(1), none), none)
+ * assert.deepStrictEqual(S.concat(none, some(1)), none)
+ * assert.deepStrictEqual(S.concat(some(1), some(2)), some(3))
  *
- * @function
- * @since 1.7.0
+ * @category instances
+ * @since 2.0.0
  */
-export const getApplySemigroup = <A>(S: Semigroup<A>): Semigroup<Option<A>> => {
+export function getApplySemigroup<A>(S: Semigroup<A>): Semigroup<Option<A>> {
   return {
-    concat: (x, y) => (x.isSome() && y.isSome() ? some(S.concat(x.value, y.value)) : none)
+    concat: (x, y) => (isSome(x) && isSome(y) ? some(S.concat(x.value, y.value)) : none)
   }
 }
 
 /**
- * @function
- * @since 1.7.0
+ * @category instances
+ * @since 2.0.0
  */
-export const getApplyMonoid = <A>(M: Monoid<A>): Monoid<Option<A>> => {
+export function getApplyMonoid<A>(M: Monoid<A>): Monoid<Option<A>> {
   return {
-    ...getApplySemigroup(M),
+    concat: getApplySemigroup(M).concat,
     empty: some(M.empty)
   }
 }
@@ -513,19 +894,28 @@ export const getApplyMonoid = <A>(M: Monoid<A>): Monoid<Option<A>> => {
 /**
  * Monoid returning the left-most non-`None` value
  *
- * @example
- * const M = getFirstMonoid<number>()
- * assert.deepEqual(M.concat(none, none), none)
- * assert.deepEqual(M.concat(some(1), none), some(1))
- * assert.deepEqual(M.concat(none, some(1)), some(1))
- * assert.deepEqual(M.concat(some(1), some(2)), some(1))
+ * | x       | y       | concat(x, y) |
+ * | ------- | ------- | ------------ |
+ * | none    | none    | none         |
+ * | some(a) | none    | some(a)      |
+ * | none    | some(a) | some(a)      |
+ * | some(a) | some(b) | some(a)      |
  *
- * @function
- * @since 1.0.0
+ * @example
+ * import { getFirstMonoid, some, none } from 'fp-ts/Option'
+ *
+ * const M = getFirstMonoid<number>()
+ * assert.deepStrictEqual(M.concat(none, none), none)
+ * assert.deepStrictEqual(M.concat(some(1), none), some(1))
+ * assert.deepStrictEqual(M.concat(none, some(1)), some(1))
+ * assert.deepStrictEqual(M.concat(some(1), some(2)), some(1))
+ *
+ * @category instances
+ * @since 2.0.0
  */
-export const getFirstMonoid = <A = never>(): Monoid<Option<A>> => {
+export function getFirstMonoid<A = never>(): Monoid<Option<A>> {
   return {
-    concat: alt,
+    concat: (x, y) => (isNone(x) ? y : x),
     empty: none
   }
 }
@@ -533,260 +923,432 @@ export const getFirstMonoid = <A = never>(): Monoid<Option<A>> => {
 /**
  * Monoid returning the right-most non-`None` value
  *
+ * | x       | y       | concat(x, y) |
+ * | ------- | ------- | ------------ |
+ * | none    | none    | none         |
+ * | some(a) | none    | some(a)      |
+ * | none    | some(a) | some(a)      |
+ * | some(a) | some(b) | some(b)      |
+ *
  * @example
+ * import { getLastMonoid, some, none } from 'fp-ts/Option'
+ *
  * const M = getLastMonoid<number>()
- * assert.deepEqual(M.concat(none, none), none)
- * assert.deepEqual(M.concat(some(1), none), some(1))
- * assert.deepEqual(M.concat(none, some(1)), some(1))
- * assert.deepEqual(M.concat(some(1), some(2)), some(2))
+ * assert.deepStrictEqual(M.concat(none, none), none)
+ * assert.deepStrictEqual(M.concat(some(1), none), some(1))
+ * assert.deepStrictEqual(M.concat(none, some(1)), some(1))
+ * assert.deepStrictEqual(M.concat(some(1), some(2)), some(2))
  *
- * @function
- * @since 1.0.0
+ * @category instances
+ * @since 2.0.0
  */
-export const getLastMonoid = <A = never>(): Monoid<Option<A>> => {
-  return getDualMonoid(getFirstMonoid())
-}
-
-/**
- * Monoid returning the left-most non-`None` value. If both operands are `Some`s then the inner values are
- * appended using the provided `Semigroup`
- *
- * @example
- * import { semigroupSum } from 'fp-ts/lib/Semigroup'
- *
- * const M = getMonoid(semigroupSum)
- * assert.deepEqual(M.concat(none, none), none)
- * assert.deepEqual(M.concat(some(1), none), some(1))
- * assert.deepEqual(M.concat(none, some(1)), some(1))
- * assert.deepEqual(M.concat(some(1), some(2)), some(3))
- *
- * @function
- * @since 1.0.0
- */
-export const getMonoid = <A>(S: Semigroup<A>): Monoid<Option<A>> => {
+export function getLastMonoid<A = never>(): Monoid<Option<A>> {
   return {
-    concat: (x, y) => (x.isNone() ? y : y.isNone() ? x : some(S.concat(x.value, y.value))),
+    concat: (x, y) => (isNone(y) ? x : y),
     empty: none
   }
 }
 
 /**
- * Constructs a new `Option` from a nullable type. If the value is `null` or `undefined`, returns `None`, otherwise
- * returns the value wrapped in a `Some`
+ * Monoid returning the left-most non-`None` value. If both operands are `Some`s then the inner values are
+ * concatenated using the provided `Semigroup`
+ *
+ * | x       | y       | concat(x, y)       |
+ * | ------- | ------- | ------------------ |
+ * | none    | none    | none               |
+ * | some(a) | none    | some(a)            |
+ * | none    | some(a) | some(a)            |
+ * | some(a) | some(b) | some(concat(a, b)) |
  *
  * @example
- * import { none, some, fromNullable } from 'fp-ts/lib/Option'
+ * import { getMonoid, some, none } from 'fp-ts/Option'
+ * import { semigroupSum } from 'fp-ts/Semigroup'
  *
- * assert.deepEqual(fromNullable(undefined), none)
- * assert.deepEqual(fromNullable(null), none)
- * assert.deepEqual(fromNullable(1), some(1))
+ * const M = getMonoid(semigroupSum)
+ * assert.deepStrictEqual(M.concat(none, none), none)
+ * assert.deepStrictEqual(M.concat(some(1), none), some(1))
+ * assert.deepStrictEqual(M.concat(none, some(1)), some(1))
+ * assert.deepStrictEqual(M.concat(some(1), some(2)), some(3))
  *
- * @function
- * @since 1.0.0
+ * @category instances
+ * @since 2.0.0
  */
-export const fromNullable = <A>(a: A | null | undefined): Option<A> => {
-  return a == null ? none : new Some(a)
-}
-
-/**
- * @function
- * @since 1.0.0
- * @alias of
- */
-export const some = of
-
-/**
- * @example
- * import { none, some, fromPredicate } from 'fp-ts/lib/Option'
- *
- * const positive = fromPredicate((n: number) => n >= 0)
- *
- * assert.deepEqual(positive(-1), none)
- * assert.deepEqual(positive(1), some(1))
- *
- * @function
- * @since 1.0.0
- */
-export const fromPredicate = <A>(predicate: Predicate<A>) => (a: A): Option<A> => {
-  return predicate(a) ? some(a) : none
-}
-
-/**
- * Transforms an exception into an `Option`. If `f` throws, returns `None`, otherwise returns the output wrapped in
- * `Some`
- *
- * @example
- * import { none, some, tryCatch } from 'fp-ts/lib/Option'
- *
- * assert.deepEqual(
- *   tryCatch(() => {
- *     throw new Error()
- *   }),
- *   none
- * )
- * assert.deepEqual(tryCatch(() => 1), some(1))
- *
- * @function
- * @since 1.0.0
- */
-export const tryCatch = <A>(f: Lazy<A>): Option<A> => {
-  try {
-    return some(f())
-  } catch (e) {
-    return none
+export function getMonoid<A>(S: Semigroup<A>): Monoid<Option<A>> {
+  return {
+    concat: (x, y) => (isNone(x) ? y : isNone(y) ? x : some(S.concat(x.value, y.value))),
+    empty: none
   }
 }
 
 /**
- * Constructs a new `Option` from a `Either`. If the value is a `Left`, returns `None`, otherwise returns the inner
- * value wrapped in a `Some`
+ * @category instances
+ * @since 2.7.0
+ */
+export const Functor: Functor1<URI> = {
+  URI,
+  map: map_
+}
+
+/**
+ * @category instances
+ * @since 2.7.0
+ */
+export const Applicative: Applicative1<URI> = {
+  URI,
+  map: map_,
+  ap: ap_,
+  of
+}
+
+/**
+ * @category instances
+ * @since 2.7.0
+ */
+export const Monad: Monad1<URI> = {
+  URI,
+  map: map_,
+  ap: ap_,
+  of,
+  chain: chain_
+}
+
+/**
+ * @category instances
+ * @since 2.7.0
+ */
+export const Foldable: Foldable1<URI> = {
+  URI,
+  reduce: reduce_,
+  foldMap: foldMap_,
+  reduceRight: reduceRight_
+}
+
+/**
+ * @category instances
+ * @since 2.7.0
+ */
+export const Alt: Alt1<URI> = {
+  URI,
+  map: map_,
+  alt: alt_
+}
+
+/**
+ * @category instances
+ * @since 2.7.0
+ */
+export const Alternative: Alternative1<URI> = {
+  URI,
+  map: map_,
+  ap: ap_,
+  of,
+  alt: alt_,
+  zero
+}
+
+/**
+ * @category instances
+ * @since 2.7.0
+ */
+export const Extend: Extend1<URI> = {
+  URI,
+  map: map_,
+  extend: extend_
+}
+
+/**
+ * @category instances
+ * @since 2.7.0
+ */
+export const Compactable: Compactable1<URI> = {
+  URI,
+  compact,
+  separate
+}
+
+/**
+ * @category instances
+ * @since 2.7.0
+ */
+export const Filterable: Filterable1<URI> = {
+  URI,
+  map: map_,
+  compact,
+  separate,
+  filter: filter_,
+  filterMap: filterMap_,
+  partition: partition_,
+  partitionMap: partitionMap_
+}
+
+/**
+ * @category instances
+ * @since 2.7.0
+ */
+export const Traversable: Traversable1<URI> = {
+  URI,
+  map: map_,
+  reduce: reduce_,
+  foldMap: foldMap_,
+  reduceRight: reduceRight_,
+  traverse: traverse_,
+  sequence
+}
+
+/**
+ * @category instances
+ * @since 2.7.0
+ */
+export const Witherable: Witherable1<URI> = {
+  URI,
+  map: map_,
+  reduce: reduce_,
+  foldMap: foldMap_,
+  reduceRight: reduceRight_,
+  traverse: traverse_,
+  sequence,
+  compact,
+  separate,
+  filter: filter_,
+  filterMap: filterMap_,
+  partition: partition_,
+  partitionMap: partitionMap_,
+  wither: wither_,
+  wilt: wilt_
+}
+
+/**
+ * @category instances
+ * @since 2.7.0
+ */
+export const MonadThrow: MonadThrow1<URI> = {
+  URI,
+  map: map_,
+  ap: ap_,
+  of,
+  chain: chain_,
+  throwError
+}
+
+// TODO: remove in v3
+/**
+ * @category instances
+ * @since 2.0.0
+ */
+export const option: Monad1<URI> &
+  Foldable1<URI> &
+  Alternative1<URI> &
+  Extend1<URI> &
+  Witherable1<URI> &
+  MonadThrow1<URI> = {
+  URI,
+  map: map_,
+  of,
+  ap: ap_,
+  chain: chain_,
+  reduce: reduce_,
+  foldMap: foldMap_,
+  reduceRight: reduceRight_,
+  traverse: traverse_,
+  sequence,
+  zero,
+  alt: alt_,
+  extend: extend_,
+  compact,
+  separate,
+  filter: filter_,
+  filterMap: filterMap_,
+  partition: partition_,
+  partitionMap: partitionMap_,
+  wither: wither_,
+  wilt: wilt_,
+  throwError
+}
+
+// -------------------------------------------------------------------------------------
+// utils
+// -------------------------------------------------------------------------------------
+
+/**
+ * Returns `true` if `ma` contains `a`
  *
  * @example
- * import { none, some, fromEither } from 'fp-ts/lib/Option'
- * import { left, right } from 'fp-ts/lib/Either'
+ * import { some, none, elem } from 'fp-ts/Option'
+ * import { eqNumber } from 'fp-ts/Eq'
  *
- * assert.deepEqual(fromEither(left(1)), none)
- * assert.deepEqual(fromEither(right(1)), some(1))
+ * assert.strictEqual(elem(eqNumber)(1, some(1)), true)
+ * assert.strictEqual(elem(eqNumber)(2, some(1)), false)
+ * assert.strictEqual(elem(eqNumber)(1, none), false)
  *
- * @function
- * @since 1.0.0
+ * @since 2.0.0
  */
-export const fromEither = <L, A>(fa: Either<L, A>): Option<A> => {
-  return fa.isLeft() ? none : some(fa.value)
+export function elem<A>(E: Eq<A>): (a: A, ma: Option<A>) => boolean {
+  return (a, ma) => (isNone(ma) ? false : E.equals(a, ma.value))
 }
 
 /**
- * Returns `true` if the option is an instance of `Some`, `false` otherwise
- * @function
- * @since 1.0.0
+ * Returns `true` if the predicate is satisfied by the wrapped value
+ *
+ * @example
+ * import { some, none, exists } from 'fp-ts/Option'
+ * import { pipe } from 'fp-ts/function'
+ *
+ * assert.strictEqual(
+ *   pipe(
+ *     some(1),
+ *     exists(n => n > 0)
+ *   ),
+ *   true
+ * )
+ * assert.strictEqual(
+ *   pipe(
+ *     some(1),
+ *     exists(n => n > 1)
+ *   ),
+ *   false
+ * )
+ * assert.strictEqual(
+ *   pipe(
+ *     none,
+ *     exists(n => n > 0)
+ *   ),
+ *   false
+ * )
+ *
+ * @since 2.0.0
  */
-export const isSome = <A>(fa: Option<A>): fa is Some<A> => {
-  return fa.isSome()
+export function exists<A>(predicate: Predicate<A>): (ma: Option<A>) => boolean {
+  return (ma) => (isNone(ma) ? false : predicate(ma.value))
 }
 
 /**
- * Returns `true` if the option is `None`, `false` otherwise
- * @function
- * @since 1.0.0
- */
-export const isNone = <A>(fa: Option<A>): fa is None<A> => {
-  return fa.isNone()
-}
-
-/**
- * Refinement version of {@link fromPredicate}
- * @function
- * @since 1.3.0
- */
-export const fromRefinement = <A, B extends A>(refinement: Refinement<A, B>) => (a: A): Option<B> => {
-  return refinement(a) ? some(a) : none
-}
-
-/**
- * Returns a refinement from a prism.
+ * Returns a `Refinement` (i.e. a custom type guard) from a `Option` returning function.
  * This function ensures that a custom type guard definition is type-safe.
  *
- * @example
+ * ```ts
+ * import { some, none, getRefinement } from 'fp-ts/Option'
+ *
  * type A = { type: 'A' }
  * type B = { type: 'B' }
  * type C = A | B
  *
  * const isA = (c: C): c is A => c.type === 'B' // <= typo but typescript doesn't complain
  * const isA = getRefinement<C, A>(c => (c.type === 'B' ? some(c) : none)) // static error: Type '"B"' is not assignable to type '"A"'
+ * ```
  *
- * @function
- * @since 1.7.0
+ * @since 2.0.0
  */
-export const getRefinement = <A, B extends A>(getOption: (a: A) => Option<B>): Refinement<A, B> => {
-  return (a: A): a is B => getOption(a).isSome()
+export function getRefinement<A, B extends A>(getOption: (a: A) => Option<B>): Refinement<A, B> {
+  return (a: A): a is B => isSome(getOption(a))
 }
 
-const compact = <A>(fa: Option<Option<A>>): Option<A> => fa.chain(identity)
-const separate = <RL, RR>(fa: Option<Either<RL, RR>>): Separated<Option<RL>, Option<RR>> => {
-  if (fa.isNone()) {
-    return {
-      left: none,
-      right: none
-    }
-  }
-  const e = fa.value
-  if (e.isLeft()) {
-    return {
-      left: some(e.value),
-      right: none
-    }
-  }
-  return {
-    left: none,
-    right: some(e.value)
-  }
-}
+// -------------------------------------------------------------------------------------
+// do notation
+// -------------------------------------------------------------------------------------
 
-const filter = <A>(fa: Option<A>, p: Predicate<A>): Option<A> => fa.filter(p)
-const filterMap = chain
-const partitionMap = <RL, RR, A>(fa: Option<A>, f: (a: A) => Either<RL, RR>): Separated<Option<RL>, Option<RR>> =>
-  separate(fa.map(f))
-const partition = <A>(fa: Option<A>, p: Predicate<A>): Separated<Option<A>, Option<A>> => ({
-  left: fa.filter(not(p)),
-  right: fa.filter(p)
-})
+/**
+ * @since 2.9.0
+ */
+export const Do: Option<{}> =
+  /*#__PURE__*/
+  of({})
 
-const wither = <F>(F: Applicative<F>) => <A, B>(fa: Option<A>, f: (a: A) => HKT<F, Option<B>>): HKT<F, Option<B>> =>
-  fa.isNone() ? F.of(fa as any) : f(fa.value)
+/**
+ * @since 2.8.0
+ */
+export const bindTo = <N extends string>(name: N): (<A>(fa: Option<A>) => Option<{ [K in N]: A }>) => map(bindTo_(name))
 
-const wilt = <F>(F: Applicative<F>) => <RL, RR, A>(
-  fa: Option<A>,
-  f: (a: A) => HKT<F, Either<RL, RR>>
-): HKT<F, Separated<Option<RL>, Option<RR>>> => {
-  if (fa.isNone()) {
-    return F.of({
-      left: none,
-      right: none
-    })
+/**
+ * @since 2.8.0
+ */
+export const bind = <N extends string, A, B>(
+  name: Exclude<N, keyof A>,
+  f: (a: A) => Option<B>
+): ((fa: Option<A>) => Option<{ [K in keyof A | N]: K extends keyof A ? A[K] : B }>) =>
+  chain((a) =>
+    pipe(
+      f(a),
+      map((b) => bind_(a, name, b))
+    )
+  )
+
+// -------------------------------------------------------------------------------------
+// pipeable sequence S
+// -------------------------------------------------------------------------------------
+
+/**
+ * @since 2.8.0
+ */
+export const apS = <A, N extends string, B>(
+  name: Exclude<N, keyof A>,
+  fb: Option<B>
+): ((fa: Option<A>) => Option<{ [K in keyof A | N]: K extends keyof A ? A[K] : B }>) =>
+  flow(
+    map((a) => (b: B) => bind_(a, name, b)),
+    ap(fb)
+  )
+
+// -------------------------------------------------------------------------------------
+// array utils
+// -------------------------------------------------------------------------------------
+
+/**
+ *
+ * @since 2.9.0
+ */
+export const traverseArrayWithIndex = <A, B>(f: (index: number, a: A) => Option<B>) => (
+  arr: ReadonlyArray<A>
+): Option<ReadonlyArray<B>> => {
+  // tslint:disable-next-line: readonly-array
+  const result = []
+  for (let i = 0; i < arr.length; i++) {
+    const b = f(i, arr[i])
+    if (isNone(b)) {
+      return none
+    }
+    result.push(b.value)
   }
-  return F.map(f(fa.value), e => {
-    if (e.isLeft()) {
-      return {
-        left: some(e.value),
-        right: none
-      }
-    }
-    return {
-      left: none,
-      right: some(e.value)
-    }
-  })
+  return some(result)
 }
 
 /**
- * @instance
- * @since 1.0.0
+ * Runs an action for every element in array and accumulates the results in option
+ *
+ * this function have the same behavior of `A.sequence(O.option)` but it's optimized and perform better
+ *
+ * @example
+ *
+ * import * as A from 'fp-ts/Array'
+ * import { traverseArray, some, fromPredicate, none } from 'fp-ts/Option'
+ * import { pipe } from 'fp-ts/function'
+ *
+ * const arr = A.range(0, 10)
+ * assert.deepStrictEqual(pipe(arr, traverseArray(some)), some(arr))
+ * assert.deepStrictEqual(pipe(arr, traverseArray(fromPredicate((x) => x > 5))), none)
+ *
+ * @since 2.9.0
  */
-export const option: Monad1<URI> &
-  Foldable1<URI> &
-  Plus1<URI> &
-  Traversable1<URI> &
-  Alternative1<URI> &
-  Extend1<URI> &
-  Compactable1<URI> &
-  Filterable1<URI> &
-  Witherable1<URI> = {
-  URI,
-  map,
-  of,
-  ap,
-  chain,
-  reduce,
-  traverse,
-  zero,
-  alt,
-  extend,
-  compact,
-  separate,
-  filter,
-  filterMap,
-  partition,
-  partitionMap,
-  wither,
-  wilt
-}
+export const traverseArray: <A, B>(f: (a: A) => Option<B>) => (arr: ReadonlyArray<A>) => Option<ReadonlyArray<B>> = (
+  f
+) => traverseArrayWithIndex((_, a) => f(a))
+
+/**
+ * get an array of option and convert it to option of array
+ *
+ * this function have the same behavior of `A.sequence(O.option)` but it's optimized and perform better
+ *
+ * @example
+ *
+ * import * as A from 'fp-ts/Array'
+ * import { sequenceArray, some, none, fromPredicate } from 'fp-ts/Option'
+ * import { pipe } from 'fp-ts/function'
+ *
+ * const arr = A.range(0, 10)
+ * assert.deepStrictEqual(pipe(arr, A.map(some), sequenceArray), some(arr))
+ * assert.deepStrictEqual(pipe(arr, A.map(fromPredicate(x => x > 8)), sequenceArray), none)
+ *
+ * @since 2.9.0
+ */
+export const sequenceArray: <A>(arr: ReadonlyArray<Option<A>>) => Option<ReadonlyArray<A>> =
+  /*#__PURE__*/
+  traverseArray(identity)

@@ -1,304 +1,256 @@
-import { Either } from './Either'
-import { Monoid } from './Monoid'
-import { Ord } from './Ord'
-import { Semigroup } from './Semigroup'
-import { Setoid } from './Setoid'
-import { Predicate, not } from './function'
+/**
+ * @since 2.0.0
+ */
 import { Separated } from './Compactable'
+import { Either } from './Either'
+import { Eq } from './Eq'
+import { Predicate, Refinement } from './function'
+import { Monoid } from './Monoid'
+import { Option } from './Option'
+import { Ord } from './Ord'
+import * as RS from './ReadonlySet'
+import { Semigroup } from './Semigroup'
+import { Show } from './Show'
 
 /**
- * @function
- * @since 1.0.0
+ * @category instances
+ * @since 2.0.0
  */
-export const toArray = <A>(O: Ord<A>) => (x: Set<A>): Array<A> => {
-  const r: Array<A> = []
-  x.forEach(e => r.push(e))
-  return r.sort(O.compare)
-}
+export const getShow: <A>(S: Show<A>) => Show<Set<A>> = RS.getShow
 
 /**
- * @function
- * @since 1.0.0
+ * @since 2.0.0
  */
-export const getSetoid = <A>(S: Setoid<A>): Setoid<Set<A>> => {
-  const subsetS = subset(S)
-  return {
-    equals: (x, y) => subsetS(x, y) && subsetS(y, x)
-  }
-}
+export const empty: Set<never> = new Set()
 
 /**
- * @function
- * @since 1.0.0
+ * @category constructors
+ * @since 2.0.0
  */
-export const some = <A>(x: Set<A>, predicate: Predicate<A>): boolean => {
-  const values = x.values()
-  let e: IteratorResult<A>
-  let found = false
-  // tslint:disable:no-conditional-assignment
-  while (!found && !(e = values.next()).done) {
-    found = predicate(e.value)
-  }
-  return found
-}
+// tslint:disable-next-line: readonly-array
+export const toArray: <A>(O: Ord<A>) => (set: Set<A>) => Array<A> = RS.toReadonlyArray as any
 
 /**
- * Projects a Set through a function
- * @function
- * @since 1.2.0
+ * @category instances
+ * @since 2.0.0
  */
-export const map = <B>(bset: Setoid<B>) => <A>(x: Set<A>, f: (x: A) => B): Set<B> => {
-  const r = new Set<B>()
-  const ismember = member(bset)(r)
-  x.forEach(e => {
-    const v = f(e)
-    if (!ismember(v)) {
-      r.add(v)
-    }
-  })
-  return r
-}
+export const getEq: <A>(E: Eq<A>) => Eq<Set<A>> = RS.getEq
 
 /**
- * @function
- * @since 1.0.0
+ * @since 2.0.0
  */
-export const every = <A>(x: Set<A>, predicate: Predicate<A>): boolean => {
-  return !some(x, not(predicate))
-}
+export const some: <A>(predicate: Predicate<A>) => (set: Set<A>) => boolean = RS.some
 
 /**
- * @function
- * @since 1.2.0
+ * `map` can be used to turn functions `(a: A) => B` into functions `(fa: F<A>) => F<B>` whose argument and return types
+ * use the type constructor `F` to represent some computational context.
+ *
+ * @category combinators
+ * @since 2.0.0
  */
-export const chain = <B>(bset: Setoid<B>) => <A>(x: Set<A>, f: (x: A) => Set<B>): Set<B> => {
-  let r = new Set<B>()
-  const rhas = member(bset)(r)
-  x.forEach(e => {
-    f(e).forEach(e => {
-      if (!rhas(e)) {
-        r.add(e)
-      }
-    })
-  })
-  return r
-}
+export const map: <B>(E: Eq<B>) => <A>(f: (x: A) => B) => (set: Set<A>) => Set<B> = RS.map as any
 
+/**
+ * @since 2.0.0
+ */
+export const every: <A>(predicate: Predicate<A>) => (set: Set<A>) => boolean = RS.every
+
+/**
+ * Composes computations in sequence, using the return value of one computation to determine the next computation.
+ *
+ * @category combinators
+ * @since 2.0.0
+ */
+export const chain: <B>(E: Eq<B>) => <A>(f: (x: A) => Set<B>) => (set: Set<A>) => Set<B> = RS.chain as any
+
+// TODO: remove non-curried overloading in v3
 /**
  * `true` if and only if every element in the first set is an element of the second set
- * @function
- * @since 1.0.0
+ *
+ * @since 2.0.0
  */
-export const subset = <A>(S: Setoid<A>) => (x: Set<A>, y: Set<A>): boolean => {
-  return every(x, member(S)(y))
+export const subset: <A>(
+  E: Eq<A>
+) => {
+  (that: Set<A>): (me: Set<A>) => boolean
+  (me: Set<A>, that: Set<A>): boolean
+} = RS.isSubset
+
+/**
+ * @category combinators
+ * @since 2.0.0
+ */
+export function filter<A, B extends A>(refinement: Refinement<A, B>): (set: Set<A>) => Set<B>
+export function filter<A>(predicate: Predicate<A>): (set: Set<A>) => Set<A>
+export function filter<A>(predicate: Predicate<A>): (set: Set<A>) => Set<A> {
+  return RS.filter(predicate) as any
 }
 
 /**
- * @function
- * @since 1.0.0
+ * @since 2.0.0
  */
-export const filter = <A>(x: Set<A>, predicate: Predicate<A>): Set<A> => {
-  const values = x.values()
-  let e: IteratorResult<A>
-  let r = new Set()
-  // tslint:disable:no-conditional-assignment
-  while (!(e = values.next()).done) {
-    const value = e.value
-    if (predicate(value)) {
-      r.add(value)
-    }
-  }
-  return r
+export function partition<A, B extends A>(refinement: Refinement<A, B>): (set: Set<A>) => Separated<Set<A>, Set<B>>
+export function partition<A>(predicate: Predicate<A>): (set: Set<A>) => Separated<Set<A>, Set<A>>
+export function partition<A>(predicate: Predicate<A>): (set: Set<A>) => Separated<Set<A>, Set<A>> {
+  return RS.partition(predicate) as any
 }
 
-/**
- * @function
- * @since 1.2.0
- */
-export const partition = <A>(x: Set<A>, predicate: Predicate<A>): Separated<Set<A>, Set<A>> => {
-  const values = x.values()
-  let e: IteratorResult<A>
-  let t = new Set()
-  let f = new Set()
-  // tslint:disable:no-conditional-assignment
-  while (!(e = values.next()).done) {
-    const value = e.value
-    if (predicate(value)) {
-      t.add(value)
-    } else {
-      f.add(value)
-    }
-  }
-  return { right: t, left: f }
-}
-
+// TODO: remove non-curried overloading in v3
 /**
  * Test if a value is a member of a set
- * @function
- * @since 1.0.0
+ *
+ * @since 2.0.0
  */
-export const member = <A>(S: Setoid<A>) => (x: Set<A>) => (a: A): boolean => {
-  return some(x, (ax: A) => S.equals(a, ax))
-}
+export const elem: <A>(
+  E: Eq<A>
+) => {
+  (a: A): (set: Set<A>) => boolean
+  (a: A, set: Set<A>): boolean
+} = RS.elem
 
+// TODO: remove non-curried overloading in v3
 /**
  * Form the union of two sets
- * @function
- * @since 1.0.0
+ *
+ * @category combinators
+ * @since 2.0.0
  */
-export const union = <A>(S: Setoid<A>): ((x: Set<A>, y: Set<A>) => Set<A>) => {
-  const memberS = member(S)
-  return (x, y) => {
-    const xhas = memberS(x)
-    const r = new Set(x)
-    y.forEach(e => {
-      if (!xhas(e)) {
-        r.add(e)
-      }
-    })
-    return r
-  }
-}
+export const union: <A>(
+  E: Eq<A>
+) => {
+  (that: Set<A>): (me: Set<A>) => Set<A>
+  (me: Set<A>, that: Set<A>): Set<A>
+} = RS.union as any
 
+// TODO: remove non-curried overloading in v3
 /**
  * The set of elements which are in both the first and second set
- * @function
- * @since 1.0.0
+ *
+ * @category combinators
+ * @since 2.0.0
  */
-export const intersection = <A>(S: Setoid<A>): ((x: Set<A>, y: Set<A>) => Set<A>) => {
-  const memberS = member(S)
-  return (x, y) => {
-    const yhas = memberS(y)
-    const r = new Set()
-    x.forEach(e => {
-      if (yhas(e)) {
-        r.add(e)
-      }
-    })
-    return r
-  }
-}
+export const intersection: <A>(
+  E: Eq<A>
+) => {
+  (that: Set<A>): (me: Set<A>) => Set<A>
+  (me: Set<A>, that: Set<A>): Set<A>
+} = RS.intersection as any
 
 /**
- * @function
- * @since 1.2.0
+ * @since 2.0.0
  */
-export const partitionMap = <L, R>(SL: Setoid<L>, SR: Setoid<R>) => <A>(
-  x: Set<A>,
-  f: (a: A) => Either<L, R>
-): Separated<Set<L>, Set<R>> => {
-  const values = x.values()
-  let e: IteratorResult<A>
-  let left = new Set()
-  let right = new Set()
-  const isMemberL = member(SL)(left)
-  const isMemberR = member(SR)(right)
-  // tslint:disable:no-conditional-assignment
-  while (!(e = values.next()).done) {
-    const v = f(e.value)
-    if (v.isLeft()) {
-      if (!isMemberL(v.value)) {
-        left.add(v.value)
-      }
-    } else {
-      if (!isMemberR(v.value)) {
-        right.add(v.value)
-      }
-    }
-  }
-  return { left, right }
-}
+export const partitionMap: <B, C>(
+  EB: Eq<B>,
+  EC: Eq<C>
+) => <A>(f: (a: A) => Either<B, C>) => (set: Set<A>) => Separated<Set<B>, Set<C>> = RS.partitionMap as any
+
+// TODO: remove non-curried overloading in v3
+/**
+ * Form the set difference (`x` - `y`)
+ *
+ * @example
+ * import { difference } from 'fp-ts/Set'
+ * import { eqNumber } from 'fp-ts/Eq'
+ * import { pipe } from 'fp-ts/function'
+ *
+ * assert.deepStrictEqual(pipe(new Set([1, 2]), difference(eqNumber)(new Set([1, 3]))), new Set([2]))
+ *
+ * @category combinators
+ * @since 2.0.0
+ */
+export const difference: <A>(
+  E: Eq<A>
+) => {
+  (that: Set<A>): (me: Set<A>) => Set<A>
+  (me: Set<A>, that: Set<A>): Set<A>
+} = RS.difference as any
 
 /**
- * Form the set difference (`y` - `x`)
- * @function
- * @since 1.0.0
+ * @category instances
+ * @since 2.0.0
  */
-export const difference = <A>(S: Setoid<A>): ((x: Set<A>, y: Set<A>) => Set<A>) => {
-  const has = member(S)
-  return (x, y) => filter(y, not(has(x)))
-}
+export const getUnionMonoid: <A>(E: Eq<A>) => Monoid<Set<A>> = RS.getUnionMonoid as any
 
 /**
- * @function
- * @since 1.0.0
+ * @category instances
+ * @since 2.0.0
  */
-export const getUnionMonoid = <A>(S: Setoid<A>): Monoid<Set<A>> => {
-  return {
-    concat: union(S),
-    empty: new Set<never>()
-  }
-}
+export const getIntersectionSemigroup: <A>(E: Eq<A>) => Semigroup<Set<A>> = RS.getIntersectionSemigroup as any
 
 /**
- * @function
- * @since 1.0.0
+ * @since 2.0.0
  */
-export const getIntersectionSemigroup = <A>(S: Setoid<A>): Semigroup<Set<A>> => {
-  return {
-    concat: intersection(S)
-  }
-}
+export const reduce: <A>(O: Ord<A>) => <B>(b: B, f: (b: B, a: A) => B) => (fa: Set<A>) => B = RS.reduce
 
 /**
- * @function
- * @since 1.0.0
+ * @since 2.0.0
  */
-export const reduce = <A>(O: Ord<A>): (<B>(fa: Set<A>, b: B, f: (b: B, a: A) => B) => B) => {
-  const toArrayO = toArray(O)
-  return (fa, b, f) => toArrayO(fa).reduce(f, b)
-}
+export const foldMap: <A, M>(O: Ord<A>, M: Monoid<M>) => (f: (a: A) => M) => (fa: Set<A>) => M = RS.foldMap
 
 /**
  * Create a set with one element
- * @function
- * @since 1.0.0
+ *
+ * @category constructors
+ * @since 2.0.0
  */
-export const singleton = <A>(a: A): Set<A> => {
-  return new Set([a])
-}
+export const singleton: <A>(a: A) => Set<A> = RS.singleton as any
 
 /**
  * Insert a value into a set
- * @function
- * @since 1.0.0
+ *
+ * @category combinators
+ * @since 2.0.0
  */
-export const insert = <A>(S: Setoid<A>): ((a: A, x: Set<A>) => Set<A>) => {
-  const memberS = member(S)
-  return (a, x) => {
-    if (!memberS(x)(a)) {
-      const r = new Set(x)
-      r.add(a)
-      return r
-    } else {
-      return x
-    }
-  }
-}
+export const insert: <A>(E: Eq<A>) => (a: A) => (set: Set<A>) => Set<A> = RS.insert as any
 
 /**
  * Delete a value from a set
- * @function
- * @since 1.0.0
+ *
+ * @category combinators
+ * @since 2.0.0
  */
-export const remove = <A>(S: Setoid<A>) => (a: A, x: Set<A>): Set<A> => {
-  return filter(x, (ax: A) => !S.equals(a, ax))
+export const remove: <A>(E: Eq<A>) => (a: A) => (set: Set<A>) => Set<A> = RS.remove as any
+
+/**
+ * Checks an element is a member of a set;
+ * If yes, removes the value from the set
+ * If no, inserts the value to the set
+ *
+ * @category combinators
+ * @since 2.5.0
+ */
+export function toggle<A>(E: Eq<A>): (a: A) => (set: Set<A>) => Set<A> {
+  const elemE = elem(E)
+  const removeE = remove(E)
+  const insertE = insert(E)
+  return (a) => (set) => (elemE(a, set) ? removeE : insertE)(a)(set)
 }
 
 /**
  * Create a set from an array
- * @function
- * @since 1.2.0
+ *
+ * @category constructors
+ * @since 2.0.0
  */
-export const fromArray = <A>(S: Setoid<A>) => (as: Array<A>): Set<A> => {
-  const len = as.length
-  const r = new Set<A>()
-  const isMember = member(S)(r)
-  for (let i = 0; i < len; i++) {
-    const a = as[i]
-    if (!isMember(a)) {
-      r.add(a)
-    }
-  }
-  return r
-}
+// tslint:disable-next-line: readonly-array
+export const fromArray: <A>(E: Eq<A>) => (as: Array<A>) => Set<A> = RS.fromArray as any
+
+/**
+ * @category combinators
+ * @since 2.0.0
+ */
+export const compact: <A>(E: Eq<A>) => (fa: Set<Option<A>>) => Set<A> = RS.compact as any
+
+/**
+ * @since 2.0.0
+ */
+export const separate: <E, A>(
+  EE: Eq<E>,
+  EA: Eq<A>
+) => (fa: Set<Either<E, A>>) => Separated<Set<E>, Set<A>> = RS.separate as any
+
+/**
+ * @category combinators
+ * @since 2.0.0
+ */
+export const filterMap: <B>(E: Eq<B>) => <A>(f: (a: A) => Option<B>) => (fa: Set<A>) => Set<B> = RS.filterMap as any

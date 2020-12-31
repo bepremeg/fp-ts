@@ -1,130 +1,109 @@
 import * as assert from 'assert'
-import { array } from '../src/Array'
-import { fieldNumber } from '../src/Field'
-import {
-  elem,
-  find,
-  fold,
-  foldM,
-  foldMap,
-  foldr,
-  getFoldableComposition,
-  intercalate,
-  maximum,
-  minimum,
-  oneOf,
-  product,
-  sequence_,
-  sum,
-  toArray,
-  traverse_,
-  traverse
-} from '../src/Foldable'
-import { IO, io } from '../src/IO'
+import * as A from '../src/ReadonlyArray'
+import * as I from '../src/IO'
+import * as O from '../src/Option'
+import * as T from '../src/Tree'
 import { monoidString } from '../src/Monoid'
-import * as option from '../src/Option'
-import { ordNumber } from '../src/Ord'
-import { setoidNumber } from '../src/Setoid'
-import { StrMap, strmap } from '../src/StrMap'
+import * as _ from '../src/Foldable'
+import { pipe } from '../src/function'
 
 export const ArrayOptionURI = 'ArrayOption'
 
 export type ArrayOptionURI = typeof ArrayOptionURI
 
 describe('Foldable', () => {
-  it('toArray', () => {
-    assert.deepEqual(toArray(array)([1, 2, 3]), [1, 2, 3])
-    assert.deepEqual(toArray(option.option)(option.some(1)), [1])
-    assert.deepEqual(toArray(option.option)(option.none), [])
-    assert.deepEqual(toArray(strmap)(new StrMap({ a: 1, b: 2 })), [1, 2])
-  })
-
-  it('foldMap', () => {
-    assert.deepEqual(foldMap(array, monoidString)(['a', 'b', 'c'], s => s), 'abc')
-  })
-
   it('getFoldableComposition', () => {
-    const arrayOptionFoldable = getFoldableComposition(array, option.option)
-    const sum = (b: number, a: number): number => b + a
-    assert.strictEqual(arrayOptionFoldable.reduce([option.some(1), option.some(2)], 0, sum), 3)
-    assert.strictEqual(arrayOptionFoldable.reduce([option.none, option.some(2)], 0, sum), 2)
+    const F = _.getFoldableComposition(A.Foldable, O.Foldable)
+    // reduce
+    assert.deepStrictEqual(F.reduce([O.some('a'), O.some('b'), O.some('c')], '', monoidString.concat), 'abc')
+    assert.deepStrictEqual(F.reduce([O.none, O.some('b'), O.none], '', monoidString.concat), 'b')
+    assert.deepStrictEqual(F.reduce([O.none, O.none, O.none], '', monoidString.concat), '')
+    assert.deepStrictEqual(F.reduce([], '', monoidString.concat), '')
+    // foldMap
+    assert.deepStrictEqual(
+      F.foldMap(monoidString)([O.some('a'), O.some('b'), O.some('c')], (a) => a),
+      'abc'
+    )
+    assert.deepStrictEqual(
+      F.foldMap(monoidString)([O.none, O.some('b'), O.none], (a) => a),
+      'b'
+    )
+    assert.deepStrictEqual(
+      F.foldMap(monoidString)([O.none, O.none, O.none], (a) => a),
+      ''
+    )
+    assert.deepStrictEqual(
+      F.foldMap(monoidString)([], (a: string) => a),
+      ''
+    )
+    // reduceRight
+    assert.deepStrictEqual(F.reduceRight([O.some('a'), O.some('b'), O.some('c')], '', monoidString.concat), 'abc')
+    assert.deepStrictEqual(F.reduceRight([O.none, O.some('b'), O.none], '', monoidString.concat), 'b')
+    assert.deepStrictEqual(F.reduceRight([O.none, O.none, O.none], '', monoidString.concat), '')
+    assert.deepStrictEqual(F.reduceRight([], '', monoidString.concat), '')
   })
 
   it('intercalate', () => {
-    assert.strictEqual(intercalate(array, monoidString)(',')(['a', 'b', 'c']), 'a,b,c')
+    assert.deepStrictEqual(_.intercalate(monoidString, A.Foldable)(',', ['a', 'b', 'c']), 'a,b,c')
+  })
+
+  it('toArray', () => {
+    // Option
+    const optionToArray = _.toArray(O.option)
+    assert.deepStrictEqual(optionToArray(O.some(1)), [1])
+    assert.deepStrictEqual(optionToArray(O.none), [])
+
+    // Tree
+    const treeToArray = _.toArray(T.tree)
+    assert.deepStrictEqual(treeToArray(T.make(1, [T.make(2, []), T.make(3, []), T.make(4, [])])), [1, 2, 3, 4])
   })
 
   it('traverse_', () => {
-    let counter = ''
-    const x = traverse_(io, array)(a => new IO(() => (counter += a)), ['a', 'b', 'c'])
-    x.run()
-    assert.strictEqual(counter, 'abc')
-  })
-
-  it('sequence_', () => {
-    let counter = ''
-    const x = sequence_(io, array)([
-      new IO(() => (counter += 'a')),
-      new IO(() => (counter += 'b')),
-      new IO(() => (counter += 'c'))
-    ])
-    x.run()
-    assert.strictEqual(counter, 'abc')
-  })
-
-  it('minimum', () => {
-    assert.deepEqual(minimum(array, ordNumber)([]), option.none)
-    assert.deepEqual(minimum(array, ordNumber)([1, 2, 3, 4, 5]), option.some(1))
-  })
-
-  it('maximum', () => {
-    assert.deepEqual(maximum(array, ordNumber)([]), option.none)
-    assert.deepEqual(maximum(array, ordNumber)([1, 2, 3, 4, 5]), option.some(5))
-  })
-
-  it('sum', () => {
-    assert.strictEqual(sum(array, fieldNumber)([1, 2, 3, 4, 5]), 15)
-  })
-
-  it('product', () => {
-    assert.strictEqual(product(array, fieldNumber)([1, 2, 3, 4, 5]), 120)
+    let log = ''
+    const append = (s: String) => () => (log += s)
+    _.traverse_(I.Applicative, A.Foldable)(['a', 'b', 'c'], append)()
+    assert.deepStrictEqual(log, 'abc')
   })
 
   it('foldM', () => {
-    assert.deepEqual(foldM(array, option.option)((b, a) => option.none, 1, []), option.some(1))
-    assert.deepEqual(foldM(array, option.option)((b, a) => option.none, 1, [2]), option.none)
-    assert.deepEqual(foldM(array, option.option)((b, a) => option.some(b + a), 1, [2]), option.some(3))
+    assert.deepStrictEqual(
+      // tslint:disable-next-line: deprecation
+      _.foldM(O.Monad, A.Foldable)([], 1, () => O.none),
+      O.some(1)
+    )
+    assert.deepStrictEqual(
+      // tslint:disable-next-line: deprecation
+      _.foldM(O.Monad, A.Foldable)([2], 1, () => O.none),
+      O.none
+    )
+    assert.deepStrictEqual(
+      // tslint:disable-next-line: deprecation
+      _.foldM(O.Monad, A.Foldable)([2], 1, (b, a) => O.some(b + a)),
+      O.some(3)
+    )
   })
 
-  it('oneOf', () => {
-    assert.deepEqual(oneOf(array, option.option)([]), option.none)
-    assert.deepEqual(oneOf(array, option.option)([option.none]), option.none)
-    assert.deepEqual(oneOf(array, option.option)([option.none, option.some(1)]), option.some(1))
-    assert.deepEqual(oneOf(array, option.option)([option.some(2), option.some(1)]), option.some(2))
-  })
-
-  it('elem', () => {
-    assert.strictEqual(elem(array, setoidNumber)(1, [1, 2, 3]), true)
-    assert.strictEqual(elem(array, setoidNumber)(4, [1, 2, 3]), false)
-  })
-
-  it('find', () => {
-    assert.deepEqual(find(array)([1, 2, 3], a => a > 4), option.none)
-    assert.deepEqual(find(array)([1, 2, 3, 5], a => a > 4), option.some(5))
-  })
-
-  it('fold', () => {
-    assert.deepEqual(fold(array, monoidString)(['a', 'b', 'c']), 'abc')
-  })
-
-  it('foldr', () => {
-    assert.deepEqual(foldr(array)(['a', 'b', 'c'], '', (a, acc) => acc + a), 'cba')
-  })
-
-  it('traverse', () => {
-    let counter = ''
-    const x = traverse(io, array)(['a', 'b', 'c'], a => new IO(() => (counter += a)))
-    x.run()
-    assert.strictEqual(counter, 'abc')
+  it('reduceM', () => {
+    assert.deepStrictEqual(
+      pipe(
+        [],
+        _.reduceM(O.Monad, A.Foldable)(1, () => O.none)
+      ),
+      O.some(1)
+    )
+    assert.deepStrictEqual(
+      pipe(
+        [2],
+        _.reduceM(O.Monad, A.Foldable)(1, () => O.none)
+      ),
+      O.none
+    )
+    assert.deepStrictEqual(
+      pipe(
+        [2],
+        _.reduceM(O.Monad, A.Foldable)(1, (b, a) => O.some(b + a))
+      ),
+      O.some(3)
+    )
   })
 })

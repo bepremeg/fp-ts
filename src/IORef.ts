@@ -1,49 +1,52 @@
-import { IO } from './IO'
-
 /**
  * Mutable references in the `IO` monad
  *
+ * @since 2.0.0
+ */
+import { IO } from './IO'
+
+/**
  * @example
- * import { newIORef } from 'fp-ts/lib/IORef'
+ * import { io } from 'fp-ts/IO'
+ * import { newIORef } from 'fp-ts/IORef'
  *
- * assert.strictEqual(
- *   newIORef(1)
- *     .chain(ref => ref.write(2).chain(() => ref.read))
- *     .run(),
- *   2
- * )
+ * assert.strictEqual(io.chain(newIORef(1), ref => io.chain(ref.write(2), () => ref.read))(), 2)
  *
- * @data
- * @constructor IORef
- * @since 1.8.0
+ * @category model
+ * @since 2.0.0
  */
 export class IORef<A> {
-  read: IO<A>
+  /**
+   * @since 2.0.0
+   */
+  readonly read: IO<A>
   constructor(private value: A) {
-    this.read = new IO(() => this.value)
+    this.read = () => this.value
+    this.write = this.write.bind(this)
+    this.modify = this.modify.bind(this)
   }
   /**
-   * @since 1.8.0
+   * @since 2.0.0
    */
   write(a: A): IO<void> {
-    return new IO(() => {
+    return () => {
       this.value = a
-    })
+    }
   }
   /**
-   * @since 1.8.0
+   * @since 2.0.0
    */
   modify(f: (a: A) => A): IO<void> {
-    return new IO(() => {
+    return () => {
       this.value = f(this.value)
-    })
+    }
   }
 }
 
 /**
- * @function
- * @since 1.8.0
+ * @category constructors
+ * @since 2.0.0
  */
-export const newIORef = <A>(a: A): IO<IORef<A>> => {
-  return new IO(() => new IORef(a))
+export function newIORef<A>(a: A): IO<IORef<A>> {
+  return () => new IORef(a)
 }

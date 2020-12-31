@@ -1,5 +1,3 @@
-import { BoundedDistributiveLattice } from './BoundedDistributiveLattice'
-
 /**
  * Heyting algebras are bounded (distributive) lattices that are also equipped with an additional binary operation
  * `implies` (also written as `→`). Heyting algebras also define a complement operation `not` (sometimes written as
@@ -14,15 +12,20 @@ import { BoundedDistributiveLattice } from './BoundedDistributiveLattice'
  * A `HeytingAlgebra` must satisfy the following laws in addition to `BoundedDistributiveLattice` laws:
  *
  * - Implication:
- *   - `a → a = 1`
- *   - `a ∧ (a → b) = a ∧ b`
- *   - `b ∧ (a → b) = b`
- *   - `a → (b ∧ c) = (a → b) ∧ (a → c)`
+ *   - `a → a <-> 1`
+ *   - `a ∧ (a → b) <-> a ∧ b`
+ *   - `b ∧ (a → b) <-> b`
+ *   - `a → (b ∧ c) <-> (a → b) ∧ (a → c)`
  * - Complemented
- *   - `¬a = a → 0`
+ *   - `¬a <-> a → 0`
  *
- * @typeclass
- * @since 1.4.0
+ * @since 2.0.0
+ */
+import { BoundedDistributiveLattice } from './BoundedDistributiveLattice'
+
+/**
+ * @category type classes
+ * @since 2.0.0
  */
 export interface HeytingAlgebra<A> extends BoundedDistributiveLattice<A> {
   readonly implies: (x: A, y: A) => A

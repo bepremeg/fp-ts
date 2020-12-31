@@ -1,78 +1,33 @@
 import * as assert from 'assert'
-import { monoidAll, monoidString, monoidSum } from '../src/Monoid'
+import { monoidString } from '../src/Monoid'
 import { ordNumber } from '../src/Ord'
-import {
-  fold,
-  getArraySemigroup,
-  getDictionarySemigroup,
-  getFirstSemigroup,
-  getJoinSemigroup,
-  getMeetSemigroup,
-  getObjectSemigroup,
-  getProductSemigroup,
-  getRecordSemigroup,
-  semigroupProduct,
-  semigroupSum,
-  semigroupVoid
-} from '../src/Semigroup'
+import * as _ from '../src/Semigroup'
 
 describe('Semigroup', () => {
-  it('fold', () => {
-    assert.strictEqual(fold(monoidString)('')(['a', 'b', 'c']), 'abc')
+  it('getTupleSemigroup', () => {
+    const S1 = _.getTupleSemigroup(_.semigroupString, _.semigroupSum)
+    assert.deepStrictEqual(S1.concat(['a', 1], ['b', 2]), ['ab', 3])
+    const S2 = _.getTupleSemigroup(_.semigroupString, _.semigroupSum, _.semigroupAll)
+    assert.deepStrictEqual(S2.concat(['a', 1, true], ['b', 2, false]), ['ab', 3, false])
   })
 
-  it('getRecordSemigroup', () => {
-    interface T {
-      a: boolean
-      b: string
-    }
-    const S = getRecordSemigroup<T>({
-      a: monoidAll,
-      b: monoidString
-    })
-    assert.deepEqual(S.concat({ a: true, b: 'foo' }, { a: false, b: 'bar' }), { a: false, b: 'foobar' })
+  it('fold', () => {
+    assert.deepStrictEqual(_.fold(monoidString)('', ['a', 'b', 'c']), 'abc')
+    assert.deepStrictEqual(_.fold(monoidString)('')(['a', 'b', 'c']), 'abc')
   })
 
   it('getMeetSemigroup', () => {
-    assert.strictEqual(getMeetSemigroup(ordNumber).concat(1, 2), 1)
+    assert.deepStrictEqual(_.getMeetSemigroup(ordNumber).concat(1, 2), 1)
   })
 
   it('getJoinSemigroup', () => {
-    assert.strictEqual(getJoinSemigroup(ordNumber).concat(1, 2), 2)
-  })
-
-  it('getProductSemigroup', () => {
-    assert.deepEqual(getProductSemigroup(monoidString, monoidSum).concat(['a', 2], ['b', 3]), ['ab', 5])
-  })
-
-  it('getArraySemigroup', () => {
-    assert.deepEqual(getArraySemigroup<number>().concat([1], [2]), [1, 2])
-  })
-
-  it('getDictionarySemigroup', () => {
-    type NumberDictionary = { [key: string]: number }
-    const foo: NumberDictionary = {
-      foo: 123,
-      bar: 123
-    }
-    const bar: NumberDictionary = {
-      foo: 456,
-      fff: 456
-    }
-    const S = getDictionarySemigroup(semigroupSum)
-    const result = S.concat(foo, bar)
-    const expected = {
-      bar: foo.bar,
-      foo: foo.foo + bar.foo,
-      fff: bar.fff
-    }
-    assert.deepEqual(result, expected)
+    assert.deepStrictEqual(_.getJoinSemigroup(ordNumber).concat(1, 2), 2)
   })
 
   it('getObjectSemigroup', () => {
     type T = {
-      foo?: number
-      bar: string
+      readonly foo?: number
+      readonly bar: string
     }
     const foo: T = {
       foo: 123,
@@ -81,22 +36,33 @@ describe('Semigroup', () => {
     const bar: T = {
       bar: '123'
     }
-    const S = getObjectSemigroup<T>()
+    const S = _.getObjectSemigroup<T>()
     const result = S.concat(foo, bar)
     const expected = Object.assign({}, foo, bar)
-    assert.strictEqual(result.foo, expected.foo)
-    assert.strictEqual(result.bar, expected.bar)
+    assert.deepStrictEqual(result.foo, expected.foo)
+    assert.deepStrictEqual(result.bar, expected.bar)
   })
 
   it('semigroupProduct', () => {
-    assert.strictEqual(semigroupProduct.concat(2, 3), 6)
+    assert.deepStrictEqual(_.semigroupProduct.concat(2, 3), 6)
   })
 
   it('getFirstSemigroup', () => {
-    assert.deepEqual(getFirstSemigroup<number>().concat(1, 2), 1)
+    assert.deepStrictEqual(_.getFirstSemigroup<number>().concat(1, 2), 1)
   })
 
   it('semigroupVoid', () => {
-    assert.deepEqual(semigroupVoid.concat(undefined, undefined), undefined)
+    assert.deepStrictEqual(_.semigroupVoid.concat(undefined, undefined), undefined)
+  })
+
+  it('getDualSemigroup', () => {
+    const S = _.getDualSemigroup(_.semigroupString)
+    assert.deepStrictEqual(S.concat('a', 'b'), 'ba')
+  })
+
+  it('getIntercalateSemigroup', () => {
+    const S = _.getIntercalateSemigroup(' ')(_.semigroupString)
+    assert.strictEqual(S.concat('a', 'b'), 'a b')
+    assert.strictEqual(S.concat(S.concat('a', 'b'), 'c'), S.concat('a', S.concat('b', 'c')))
   })
 })

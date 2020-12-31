@@ -1,181 +1,142 @@
-import { Applicative, Applicative1, Applicative2, Applicative3 } from './Applicative'
-import { Chain, Chain1, Chain2, Chain3 } from './Chain'
-import { Functor, Functor1, Functor2, Functor3 } from './Functor'
-import { HKT, Type, Type2, Type3, URIS, URIS2, URIS3 } from './HKT'
-import { Monad, Monad1, Monad2, Monad3 } from './Monad'
+/**
+ * @since 2.0.0
+ */
+import { HKT, Kind, Kind2, Kind3, URIS, URIS2, URIS3 } from './HKT'
+import { Monad, Monad1, Monad2, Monad2C, Monad3 } from './Monad'
 import { Reader } from './Reader'
 
-export interface ReaderT<M> {
-  readonly map: <E, A, B>(f: (a: A) => B, fa: (e: E) => HKT<M, A>) => (e: E) => HKT<M, B>
-  readonly of: <E, A>(a: A) => (e: E) => HKT<M, A>
-  readonly ap: <E, A, B>(fab: (e: E) => HKT<M, (a: A) => B>, fa: (e: E) => HKT<M, A>) => (e: E) => HKT<M, B>
-  readonly chain: <E, A, B>(f: (a: A) => (e: E) => HKT<M, B>, fa: (e: E) => HKT<M, A>) => (e: E) => HKT<M, B>
-}
+// TODO: remove module in v3
 
-export interface ReaderT1<M extends URIS> {
-  readonly map: <E, A, B>(f: (a: A) => B, fa: (e: E) => Type<M, A>) => (e: E) => Type<M, B>
-  readonly of: <E, A>(a: A) => (e: E) => Type<M, A>
-  readonly ap: <E, A, B>(fab: (e: E) => Type<M, (a: A) => B>, fa: (e: E) => HKT<M, A>) => (e: E) => Type<M, B>
-  readonly chain: <E, A, B>(f: (a: A) => (e: E) => Type<M, B>, fa: (e: E) => Type<M, A>) => (e: E) => Type<M, B>
-}
-
-export interface ReaderT2<M extends URIS2> {
-  readonly map: <L, E, A, B>(f: (a: A) => B, fa: (e: E) => Type2<M, L, A>) => (e: E) => Type2<M, L, B>
-  readonly of: <L, E, A>(a: A) => (e: E) => Type2<M, L, A>
-  readonly ap: <L, E, A, B>(
-    fab: (e: E) => Type2<M, L, (a: A) => B>,
-    fa: (e: E) => Type2<M, L, A>
-  ) => (e: E) => Type2<M, L, B>
-  readonly chain: <L, E, A, B>(
-    f: (a: A) => (e: E) => Type2<M, L, B>,
-    fa: (e: E) => Type2<M, L, A>
-  ) => (e: E) => Type2<M, L, B>
-}
-
-export interface ReaderT3<M extends URIS3> {
-  readonly map: <U, L, E, A, B>(f: (a: A) => B, fa: (e: E) => Type3<M, U, L, A>) => (e: E) => Type3<M, U, L, B>
-  readonly of: <U, L, E, A>(a: A) => (e: E) => Type3<M, U, L, A>
-  readonly ap: <U, L, E, A, B>(
-    fab: (e: E) => Type3<M, U, L, (a: A) => B>,
-    fa: (e: E) => Type3<M, U, L, A>
-  ) => (e: E) => Type3<M, U, L, B>
-  readonly chain: <U, L, E, A, B>(
-    f: (a: A) => (e: E) => Type3<M, U, L, B>,
-    fa: (e: E) => Type3<M, U, L, A>
-  ) => (e: E) => Type3<M, U, L, B>
-}
-
-export function map<F extends URIS3>(
-  F: Functor3<F>
-): <U, L, E, A, B>(f: (a: A) => B, fa: (e: E) => Type3<F, U, L, A>) => (e: E) => Type3<F, U, L, B>
-export function map<F extends URIS2>(
-  F: Functor2<F>
-): <L, E, A, B>(f: (a: A) => B, fa: (e: E) => Type2<F, L, A>) => (e: E) => Type2<F, L, B>
-export function map<F extends URIS>(
-  F: Functor1<F>
-): <E, A, B>(f: (a: A) => B, fa: (e: E) => Type<F, A>) => (e: E) => Type<F, B>
-export function map<F>(F: Functor<F>): <E, A, B>(f: (a: A) => B, fa: (e: E) => HKT<F, A>) => (e: E) => HKT<F, B>
 /**
- * @function
- * @since 1.0.0
+ * @category model
+ * @since 2.0.0
  */
-export function map<F>(F: Functor<F>): <E, A, B>(f: (a: A) => B, fa: (e: E) => HKT<F, A>) => (e: E) => HKT<F, B> {
-  return (f, fa) => e => F.map(fa(e), f)
+export interface ReaderT<M, R, A> {
+  (r: R): HKT<M, A>
 }
 
-export function of<F extends URIS3>(F: Applicative3<F>): <U, L, E, A>(a: A) => (e: E) => Type3<F, U, L, A>
-export function of<F extends URIS2>(F: Applicative2<F>): <L, E, A>(a: A) => (e: E) => Type2<F, L, A>
-export function of<F extends URIS>(F: Applicative1<F>): <E, A>(a: A) => (e: E) => Type<F, A>
-export function of<F>(F: Applicative<F>): <E, A>(a: A) => (e: E) => HKT<F, A>
 /**
- * @function
- * @since 1.0.0
+ * @since 2.0.0
  */
-export function of<F>(F: Applicative<F>): <E, A>(a: A) => (e: E) => HKT<F, A> {
-  return <A>(a: A) => <E>(e: E) => F.of(a)
+export interface ReaderM<M> {
+  readonly map: <R, A, B>(ma: ReaderT<M, R, A>, f: (a: A) => B) => ReaderT<M, R, B>
+  readonly of: <R, A>(a: A) => ReaderT<M, R, A>
+  readonly ap: <R, A, B>(mab: ReaderT<M, R, (a: A) => B>, ma: ReaderT<M, R, A>) => ReaderT<M, R, B>
+  readonly chain: <R, A, B>(ma: ReaderT<M, R, A>, f: (a: A) => ReaderT<M, R, B>) => ReaderT<M, R, B>
+  readonly ask: <R>() => ReaderT<M, R, R>
+  readonly asks: <R, A>(f: (r: R) => A) => ReaderT<M, R, A>
+  readonly local: <R, A, Q>(ma: ReaderT<M, R, A>, f: (d: Q) => R) => ReaderT<M, Q, A>
+  readonly fromReader: <R, A>(ma: Reader<R, A>) => ReaderT<M, R, A>
+  readonly fromM: <R, A>(ma: HKT<M, A>) => ReaderT<M, R, A>
 }
 
-export function ap<F extends URIS3>(
-  F: Applicative3<F>
-): <U, L, E, A, B>(
-  fab: (e: E) => Type3<F, U, L, (a: A) => B>,
-  fa: (e: E) => Type3<F, U, L, A>
-) => (e: E) => Type3<F, U, L, B>
-export function ap<F extends URIS2>(
-  F: Applicative2<F>
-): <L, E, A, B>(fab: (e: E) => Type2<F, L, (a: A) => B>, fa: (e: E) => Type2<F, L, A>) => (e: E) => Type2<F, L, B>
-export function ap<F extends URIS>(
-  F: Applicative1<F>
-): <E, A, B>(fab: (e: E) => Type<F, (a: A) => B>, fa: (e: E) => Type<F, A>) => (e: E) => Type<F, B>
-export function ap<F>(
-  F: Applicative<F>
-): <E, A, B>(fab: (e: E) => HKT<F, (a: A) => B>, fa: (e: E) => HKT<F, A>) => (e: E) => HKT<F, B>
 /**
- * @function
- * @since 1.0.0
+ * @category model
+ * @since 2.0.0
  */
-export function ap<F>(
-  F: Applicative<F>
-): <E, A, B>(fab: (e: E) => HKT<F, (a: A) => B>, fa: (e: E) => HKT<F, A>) => (e: E) => HKT<F, B> {
-  return (fab, fa) => e => F.ap(fab(e), fa(e))
+export interface ReaderT1<M extends URIS, R, A> {
+  (r: R): Kind<M, A>
 }
 
-export function chain<F extends URIS3>(
-  F: Chain3<F>
-): <U, L, E, A, B>(
-  f: (a: A) => (e: E) => Type3<F, U, L, B>,
-  fa: (e: E) => Type3<F, U, L, A>
-) => (e: E) => Type3<F, U, L, B>
-export function chain<F extends URIS2>(
-  F: Chain2<F>
-): <L, E, A, B>(f: (a: A) => (e: E) => Type2<F, L, B>, fa: (e: E) => Type2<F, L, A>) => (e: E) => Type2<F, L, B>
-export function chain<F extends URIS>(
-  F: Chain1<F>
-): <E, A, B>(f: (a: A) => (e: E) => Type<F, B>, fa: (e: E) => Type<F, A>) => (e: E) => Type<F, B>
-export function chain<F>(
-  F: Chain<F>
-): <E, A, B>(f: (a: A) => (e: E) => HKT<F, B>, fa: (e: E) => HKT<F, A>) => (e: E) => HKT<F, B>
 /**
- * @function
- * @since 1.0.0
+ * @since 2.0.0
  */
-export function chain<F>(
-  F: Chain<F>
-): <E, A, B>(f: (a: A) => (e: E) => HKT<F, B>, fa: (e: E) => HKT<F, A>) => (e: E) => HKT<F, B> {
-  return (f, fa) => e => F.chain(fa(e), a => f(a)(e))
+export interface ReaderM1<M extends URIS> {
+  readonly map: <R, A, B>(ma: ReaderT1<M, R, A>, f: (a: A) => B) => ReaderT1<M, R, B>
+  readonly of: <R, A>(a: A) => ReaderT1<M, R, A>
+  readonly ap: <R, A, B>(mab: ReaderT1<M, R, (a: A) => B>, ma: ReaderT1<M, R, A>) => ReaderT1<M, R, B>
+  readonly chain: <R, A, B>(ma: ReaderT1<M, R, A>, f: (a: A) => ReaderT1<M, R, B>) => ReaderT1<M, R, B>
+  readonly ask: <R>() => ReaderT1<M, R, R>
+  readonly asks: <R, A>(f: (r: R) => A) => ReaderT1<M, R, A>
+  readonly local: <R, A, Q>(ma: ReaderT1<M, R, A>, f: (d: Q) => R) => ReaderT1<M, Q, A>
+  readonly fromReader: <R, A>(ma: Reader<R, A>) => ReaderT1<M, R, A>
+  readonly fromM: <R, A>(ma: Kind<M, A>) => ReaderT1<M, R, A>
 }
 
-export function ask<F extends URIS3>(F: Applicative3<F>): <U, L, E>() => (e: E) => Type3<F, U, L, E>
-export function ask<F extends URIS2>(F: Applicative2<F>): <L, E>() => (e: E) => Type2<F, L, E>
-export function ask<F extends URIS>(F: Applicative1<F>): <E>() => (e: E) => Type<F, E>
-export function ask<F>(F: Applicative<F>): <E>() => (e: E) => HKT<F, E>
 /**
- * @function
- * @since 1.0.0
+ * @category model
+ * @since 2.0.0
  */
-export function ask<F>(F: Applicative<F>): <E>() => (e: E) => HKT<F, E> {
-  return () => F.of
+export interface ReaderT2<M extends URIS2, R, E, A> {
+  (r: R): Kind2<M, E, A>
 }
 
-export function asks<F extends URIS3>(F: Applicative3<F>): <U, L, E, A>(f: (e: E) => A) => (e: E) => Type3<F, U, L, A>
-export function asks<F extends URIS2>(F: Applicative2<F>): <L, E, A>(f: (e: E) => A) => (e: E) => Type2<F, L, A>
-export function asks<F extends URIS>(F: Applicative1<F>): <E, A>(f: (e: E) => A) => (e: E) => Type<F, A>
-export function asks<F>(F: Applicative<F>): <E, A>(f: (e: E) => A) => (e: E) => HKT<F, A>
 /**
- * @function
- * @since 1.0.0
+ * @since 2.0.0
  */
-export function asks<F>(F: Applicative<F>): <E, A>(f: (e: E) => A) => (e: E) => HKT<F, A> {
-  return f => e => F.of(f(e))
+export interface ReaderM2<M extends URIS2> {
+  readonly map: <R, E, A, B>(ma: ReaderT2<M, R, E, A>, f: (a: A) => B) => ReaderT2<M, R, E, B>
+  readonly of: <R, E, A>(a: A) => ReaderT2<M, R, E, A>
+  readonly ap: <R, E, A, B>(mab: ReaderT2<M, R, E, (a: A) => B>, ma: ReaderT2<M, R, E, A>) => ReaderT2<M, R, E, B>
+  readonly chain: <R, E, A, B>(ma: ReaderT2<M, R, E, A>, f: (a: A) => ReaderT2<M, R, E, B>) => ReaderT2<M, R, E, B>
+  readonly ask: <R, E>() => ReaderT2<M, R, E, R>
+  readonly asks: <R, E, A>(f: (r: R) => A) => ReaderT2<M, R, E, A>
+  readonly local: <R, E, A, Q>(ma: ReaderT2<M, R, E, A>, f: (d: Q) => R) => ReaderT2<M, Q, E, A>
+  readonly fromReader: <R, E, A>(ma: Reader<R, A>) => ReaderT2<M, R, E, A>
+  readonly fromM: <R, E, A>(ma: Kind2<M, E, A>) => ReaderT2<M, R, E, A>
 }
 
-export function fromReader<F extends URIS3>(
-  F: Applicative3<F>
-): <E, U, L, A>(fa: Reader<E, A>) => (e: E) => Type3<F, U, L, A>
-export function fromReader<F extends URIS2>(F: Applicative2<F>): <E, L, A>(fa: Reader<E, A>) => (e: E) => Type2<F, L, A>
-export function fromReader<F extends URIS>(F: Applicative1<F>): <E, A>(fa: Reader<E, A>) => (e: E) => Type<F, A>
-export function fromReader<F>(F: Applicative<F>): <E, A>(fa: Reader<E, A>) => (e: E) => HKT<F, A>
 /**
- * @function
- * @since 1.2.0
+ * @since 2.2.0
  */
-export function fromReader<F>(F: Applicative<F>): <E, A>(fa: Reader<E, A>) => (e: E) => HKT<F, A> {
-  return fa => e => F.of(fa.run(e))
+export interface ReaderM2C<M extends URIS2, E> {
+  readonly map: <R, A, B>(ma: ReaderT2<M, R, E, A>, f: (a: A) => B) => ReaderT2<M, R, E, B>
+  readonly of: <R, A>(a: A) => ReaderT2<M, R, E, A>
+  readonly ap: <R, A, B>(mab: ReaderT2<M, R, E, (a: A) => B>, ma: ReaderT2<M, R, E, A>) => ReaderT2<M, R, E, B>
+  readonly chain: <R, A, B>(ma: ReaderT2<M, R, E, A>, f: (a: A) => ReaderT2<M, R, E, B>) => ReaderT2<M, R, E, B>
+  readonly ask: <R>() => ReaderT2<M, R, E, R>
+  readonly asks: <R, A>(f: (r: R) => A) => ReaderT2<M, R, E, A>
+  readonly local: <R, A, Q>(ma: ReaderT2<M, R, E, A>, f: (d: Q) => R) => ReaderT2<M, Q, E, A>
+  readonly fromReader: <R, A>(ma: Reader<R, A>) => ReaderT2<M, R, E, A>
+  readonly fromM: <R, A>(ma: Kind2<M, E, A>) => ReaderT2<M, R, E, A>
 }
 
-export function getReaderT<M extends URIS3>(M: Monad3<M>): ReaderT3<M>
-export function getReaderT<M extends URIS2>(M: Monad2<M>): ReaderT2<M>
-export function getReaderT<M extends URIS>(M: Monad1<M>): ReaderT1<M>
-export function getReaderT<M>(M: Monad<M>): ReaderT<M>
 /**
- * @function
- * @since 1.0.0
+ * @since 2.0.0
  */
-export function getReaderT<M>(M: Monad<M>): ReaderT<M> {
+export interface ReaderT3<M extends URIS3, R, U, E, A> {
+  (r: R): Kind3<M, U, E, A>
+}
+
+/**
+ * @since 2.0.0
+ */
+export interface ReaderM3<M extends URIS3> {
+  readonly map: <R, U, E, A, B>(ma: ReaderT3<M, R, U, E, A>, f: (a: A) => B) => ReaderT3<M, R, U, E, B>
+  readonly of: <R, U, E, A>(a: A) => ReaderT3<M, R, U, E, A>
+  readonly ap: <R, U, E, A, B>(
+    mab: ReaderT3<M, R, U, E, (a: A) => B>,
+    ma: ReaderT3<M, R, U, E, A>
+  ) => ReaderT3<M, R, U, E, B>
+  readonly chain: <R, U, E, A, B>(
+    ma: ReaderT3<M, R, U, E, A>,
+    f: (a: A) => ReaderT3<M, R, U, E, B>
+  ) => ReaderT3<M, R, U, E, B>
+  readonly ask: <R, U, E>() => ReaderT3<M, R, U, E, R>
+  readonly asks: <R, U, E, A>(f: (r: R) => A) => ReaderT3<M, R, U, E, A>
+  readonly local: <R, U, E, A, Q>(ma: ReaderT3<M, R, U, E, A>, f: (d: Q) => R) => ReaderT3<M, Q, U, E, A>
+  readonly fromReader: <R, U, E, A>(ma: Reader<R, A>) => ReaderT3<M, R, U, E, A>
+  readonly fromM: <R, U, E, A>(ma: Kind3<M, U, E, A>) => ReaderT3<M, R, U, E, A>
+}
+
+/**
+ * @since 2.0.0
+ */
+export function getReaderM<M extends URIS3>(M: Monad3<M>): ReaderM3<M>
+export function getReaderM<M extends URIS2>(M: Monad2<M>): ReaderM2<M>
+export function getReaderM<M extends URIS2, E>(M: Monad2C<M, E>): ReaderM2C<M, E>
+export function getReaderM<M extends URIS>(M: Monad1<M>): ReaderM1<M>
+export function getReaderM<M>(M: Monad<M>): ReaderM<M>
+export function getReaderM<M>(M: Monad<M>): ReaderM<M> {
   return {
-    map: map(M),
-    of: of(M),
-    ap: ap(M),
-    chain: chain(M)
+    map: (ma, f) => (r) => M.map(ma(r), f),
+    of: (a) => () => M.of(a),
+    ap: (mab, ma) => (r) => M.ap(mab(r), ma(r)),
+    chain: (ma, f) => (r) => M.chain(ma(r), (a) => f(a)(r)),
+    ask: () => M.of,
+    asks: (f) => (r) => M.map(M.of(r), f),
+    local: (ma, f) => (q) => ma(f(q)),
+    fromReader: (ma) => (r) => M.of(ma(r)),
+    fromM: (ma) => () => ma
   }
 }

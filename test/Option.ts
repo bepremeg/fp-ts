@@ -1,374 +1,501 @@
 import * as assert from 'assert'
-import { array } from '../src/Array'
+import * as A from '../src/ReadonlyArray'
 import { left, right } from '../src/Either'
-import {
-  Option,
-  fromEither,
-  fromNullable,
-  fromPredicate,
-  fromRefinement,
-  getFirstMonoid,
-  getLastMonoid,
-  getMonoid,
-  getOrd,
-  getSetoid,
-  isNone,
-  isSome,
-  none,
-  option,
-  some,
-  tryCatch,
-  getRefinement,
-  getApplySemigroup,
-  getApplyMonoid
-} from '../src/Option'
+import { eqNumber } from '../src/Eq'
+import { identity, pipe } from '../src/function'
+import { monoidString, monoidSum } from '../src/Monoid'
+import * as _ from '../src/Option'
 import { ordString } from '../src/Ord'
 import { semigroupString, semigroupSum } from '../src/Semigroup'
-import { setoidNumber } from '../src/Setoid'
-import { identity } from '../src/function'
-import { Identity, identity as I } from '../src/Identity'
-import { monoidSum } from '../src/Monoid'
+import { showString } from '../src/Show'
+import * as T from '../src/Task'
 
 const p = (n: number): boolean => n > 2
 
 describe('Option', () => {
-  it('fold', () => {
-    const f = 'none'
-    const g = (s: string) => `some${s.length}`
-    assert.strictEqual(none.fold(f, g), 'none')
-    assert.strictEqual(some('abc').fold(f, g), 'some3')
+  describe('pipeables', () => {
+    it('map', () => {
+      const double = (n: number) => n * 2
+      assert.deepStrictEqual(pipe(_.some(2), _.map(double)), _.some(4))
+      assert.deepStrictEqual(pipe(_.none, _.map(double)), _.none)
+    })
+
+    it('ap', () => {
+      const double = (n: number) => n * 2
+      assert.deepStrictEqual(pipe(_.some(double), _.ap(_.some(2))), _.some(4))
+      assert.deepStrictEqual(pipe(_.some(double), _.ap(_.none)), _.none)
+      assert.deepStrictEqual(pipe(_.none, _.ap(_.some(2))), _.none)
+      assert.deepStrictEqual(pipe(_.none, _.ap(_.none)), _.none)
+    })
+
+    it('apFirst', () => {
+      assert.deepStrictEqual(pipe(_.some('a'), _.apFirst(_.some('b'))), _.some('a'))
+    })
+
+    it('apSecond', () => {
+      assert.deepStrictEqual(pipe(_.some('a'), _.apSecond(_.some('b'))), _.some('b'))
+    })
+
+    it('chain', () => {
+      const f = (n: number) => _.some(n * 2)
+      const g = () => _.none
+      assert.deepStrictEqual(pipe(_.some(1), _.chain(f)), _.some(2))
+      assert.deepStrictEqual(pipe(_.none, _.chain(f)), _.none)
+      assert.deepStrictEqual(pipe(_.some(1), _.chain(g)), _.none)
+      assert.deepStrictEqual(pipe(_.none, _.chain(g)), _.none)
+    })
+
+    it('chainFirst', () => {
+      const f = (n: number) => _.some(n * 2)
+      assert.deepStrictEqual(pipe(_.some(1), _.chainFirst(f)), _.some(1))
+    })
+
+    it('duplicate', () => {
+      assert.deepStrictEqual(pipe(_.some(1), _.duplicate), _.some(_.some(1)))
+    })
+
+    it('flatten', () => {
+      assert.deepStrictEqual(pipe(_.some(_.some(1)), _.flatten), _.some(1))
+    })
+
+    it('alt', () => {
+      assert.deepStrictEqual(
+        pipe(
+          _.some(1),
+          _.alt(() => _.some(2))
+        ),
+        _.some(1)
+      )
+      assert.deepStrictEqual(
+        pipe(
+          _.some(2),
+          _.alt(() => _.none as _.Option<number>)
+        ),
+        _.some(2)
+      )
+      assert.deepStrictEqual(
+        pipe(
+          _.none,
+          _.alt(() => _.some(1))
+        ),
+        _.some(1)
+      )
+      assert.deepStrictEqual(
+        pipe(
+          _.none,
+          _.alt(() => _.none)
+        ),
+        _.none
+      )
+    })
+
+    it('extend', () => {
+      const f = _.getOrElse(() => 0)
+      assert.deepStrictEqual(pipe(_.some(2), _.extend(f)), _.some(2))
+      assert.deepStrictEqual(pipe(_.none, _.extend(f)), _.none)
+    })
+
+    it('reduce', () => {
+      assert.deepStrictEqual(
+        pipe(
+          _.none,
+          _.reduce(2, (b, a) => b + a)
+        ),
+        2
+      )
+      assert.deepStrictEqual(
+        pipe(
+          _.some(3),
+          _.reduce(2, (b, a) => b + a)
+        ),
+        5
+      )
+    })
+
+    it('foldMap', () => {
+      assert.deepStrictEqual(pipe(_.some('a'), _.foldMap(monoidString)(identity)), 'a')
+      assert.deepStrictEqual(pipe(_.none, _.foldMap(monoidString)(identity)), '')
+    })
+
+    it('reduceRight', () => {
+      const f = (a: string, acc: string) => acc + a
+      assert.deepStrictEqual(pipe(_.some('a'), _.reduceRight('', f)), 'a')
+      assert.deepStrictEqual(pipe(_.none, _.reduceRight('', f)), '')
+    })
+
+    it('compact', () => {
+      assert.deepStrictEqual(_.compact(_.none), _.none)
+      assert.deepStrictEqual(_.compact(_.some(_.none)), _.none)
+      assert.deepStrictEqual(_.compact(_.some(_.some('123'))), _.some('123'))
+    })
+
+    it('separate', () => {
+      assert.deepStrictEqual(_.separate(_.none), { left: _.none, right: _.none })
+      assert.deepStrictEqual(_.separate(_.some(left('123'))), { left: _.some('123'), right: _.none })
+      assert.deepStrictEqual(_.separate(_.some(right('123'))), { left: _.none, right: _.some('123') })
+    })
+
+    it('filter', () => {
+      const predicate = (a: number) => a === 2
+      assert.deepStrictEqual(pipe(_.none, _.filter(predicate)), _.none)
+      assert.deepStrictEqual(pipe(_.some(1), _.filter(predicate)), _.none)
+      assert.deepStrictEqual(pipe(_.some(2), _.filter(predicate)), _.some(2))
+    })
+
+    it('filterMap', () => {
+      const f = (n: number) => (p(n) ? _.some(n + 1) : _.none)
+      assert.deepStrictEqual(pipe(_.none, _.filterMap(f)), _.none)
+      assert.deepStrictEqual(pipe(_.some(1), _.filterMap(f)), _.none)
+      assert.deepStrictEqual(pipe(_.some(3), _.filterMap(f)), _.some(4))
+    })
+
+    it('partition', () => {
+      assert.deepStrictEqual(pipe(_.none, _.partition(p)), { left: _.none, right: _.none })
+      assert.deepStrictEqual(pipe(_.some(1), _.partition(p)), { left: _.some(1), right: _.none })
+      assert.deepStrictEqual(pipe(_.some(3), _.partition(p)), { left: _.none, right: _.some(3) })
+    })
+
+    it('partitionMap', () => {
+      const f = (n: number) => (p(n) ? right(n + 1) : left(n - 1))
+      assert.deepStrictEqual(pipe(_.none, _.partitionMap(f)), { left: _.none, right: _.none })
+      assert.deepStrictEqual(pipe(_.some(1), _.partitionMap(f)), { left: _.some(0), right: _.none })
+      assert.deepStrictEqual(pipe(_.some(3), _.partitionMap(f)), { left: _.none, right: _.some(4) })
+    })
+
+    it('traverse', () => {
+      assert.deepStrictEqual(
+        pipe(
+          _.some('hello'),
+          _.traverse(A.Applicative)(() => [])
+        ),
+        []
+      )
+      assert.deepStrictEqual(
+        pipe(
+          _.some('hello'),
+          _.traverse(A.Applicative)((s) => [s.length])
+        ),
+        [_.some(5)]
+      )
+      assert.deepStrictEqual(
+        pipe(
+          _.none,
+          _.traverse(A.Applicative)((s) => [s])
+        ),
+        [_.none]
+      )
+    })
+
+    it('sequence', () => {
+      const sequence = _.sequence(A.Applicative)
+      assert.deepStrictEqual(sequence(_.some([1, 2])), [_.some(1), _.some(2)])
+      assert.deepStrictEqual(sequence(_.none), [_.none])
+    })
+
+    it('wither', async () => {
+      const wither = _.wither(T.ApplicativePar)((n: number) => T.of(p(n) ? _.some(n + 1) : _.none))
+      assert.deepStrictEqual(await pipe(_.none, wither)(), _.none)
+      assert.deepStrictEqual(await pipe(_.some(1), wither)(), _.none)
+      assert.deepStrictEqual(await pipe(_.some(3), wither)(), _.some(4))
+    })
+
+    it('wilt', async () => {
+      const wilt = _.wilt(T.ApplicativePar)((n: number) => T.of(p(n) ? right(n + 1) : left(n - 1)))
+      assert.deepStrictEqual(await pipe(_.none, wilt)(), { left: _.none, right: _.none })
+      assert.deepStrictEqual(await pipe(_.some(1), wilt)(), { left: _.some(0), right: _.none })
+      assert.deepStrictEqual(await pipe(_.some(3), wilt)(), { left: _.none, right: _.some(4) })
+    })
   })
 
-  it('foldL', () => {
+  describe('constructors', () => {
+    it('fromEither', () => {
+      assert.deepStrictEqual(_.fromEither(left('a')), _.none)
+      assert.deepStrictEqual(_.fromEither(right(1)), _.some(1))
+    })
+  })
+
+  it('zero', () => {
+    assert.deepStrictEqual(_.zero(), _.none)
+  })
+
+  it('fold', () => {
     const f = () => 'none'
     const g = (s: string) => `some${s.length}`
-    assert.strictEqual(none.foldL(f, g), 'none')
-    assert.strictEqual(some('abc').foldL(f, g), 'some3')
+    const fold = _.fold(f, g)
+    assert.deepStrictEqual(fold(_.none), 'none')
+    assert.deepStrictEqual(fold(_.some('abc')), 'some3')
   })
 
   it('toNullable', () => {
-    assert.strictEqual(none.toNullable(), null)
-    assert.strictEqual(some(1).toNullable(), 1)
+    assert.deepStrictEqual(_.toNullable(_.none), null)
+    assert.deepStrictEqual(_.toNullable(_.some(1)), 1)
   })
 
   it('toUndefined', () => {
-    assert.strictEqual(none.toUndefined(), undefined)
-    assert.strictEqual(some(1).toUndefined(), 1)
-  })
-
-  it('toString', () => {
-    assert.strictEqual(none.toString(), 'none')
-    assert.strictEqual(some(1).toString(), 'some(1)')
-    assert.strictEqual(none.inspect(), 'none')
-    assert.strictEqual(some(1).inspect(), 'some(1)')
+    assert.deepStrictEqual(_.toUndefined(_.none), undefined)
+    assert.deepStrictEqual(_.toUndefined(_.some(1)), 1)
   })
 
   it('getOrElse', () => {
-    const x: Option<number> = some(1)
-    assert.strictEqual(x.getOrElse(0), 1)
-    const y: Option<number> = none
-    assert.strictEqual(y.getOrElse(0), 0)
-  })
-
-  it('getOrElseL', () => {
-    const x: Option<number> = some(1)
-    assert.strictEqual(x.getOrElseL(() => 0), 1)
-    const y: Option<number> = none
-    assert.strictEqual(y.getOrElseL(() => 0), 0)
+    assert.deepStrictEqual(
+      pipe(
+        _.some(1),
+        _.getOrElse(() => 0)
+      ),
+      1
+    )
+    assert.deepStrictEqual(
+      pipe(
+        _.none,
+        _.getOrElse(() => 0)
+      ),
+      0
+    )
   })
 
   it('equals', () => {
-    const { equals } = getSetoid(setoidNumber)
-    assert.strictEqual(equals(none, none), true)
-    assert.strictEqual(equals(none, some(1)), false)
-    assert.strictEqual(equals(some(1), none), false)
-    assert.strictEqual(equals(some(2), some(1)), false)
-    assert.strictEqual(equals(some(1), some(2)), false)
-    assert.strictEqual(equals(some(2), some(2)), true)
+    const { equals } = _.getEq(eqNumber)
+    assert.deepStrictEqual(equals(_.none, _.none), true)
+    assert.deepStrictEqual(equals(_.none, _.some(1)), false)
+    assert.deepStrictEqual(equals(_.some(1), _.none), false)
+    assert.deepStrictEqual(equals(_.some(2), _.some(1)), false)
+    assert.deepStrictEqual(equals(_.some(1), _.some(2)), false)
+    assert.deepStrictEqual(equals(_.some(2), _.some(2)), true)
   })
 
-  it('map', () => {
-    const f = (n: number) => n * 2
-    assert.deepEqual(some(2).map(f), some(4))
-    assert.deepEqual(none.map(f), none)
-    assert.deepEqual(option.map(some(2), f), some(4))
+  it('getEq', () => {
+    const S = _.getEq(ordString)
+    assert.deepStrictEqual(S.equals(_.none, _.none), true)
+    assert.deepStrictEqual(S.equals(_.some('a'), _.none), false)
+    assert.deepStrictEqual(S.equals(_.none, _.some('a')), false)
+    assert.deepStrictEqual(S.equals(_.some('a'), _.some('a')), true)
+    assert.deepStrictEqual(S.equals(_.some('a'), _.some('b')), false)
   })
 
-  it('getSetoid', () => {
-    const O = getSetoid(ordString)
-    assert.deepEqual(O.equals(none, none), true, 'none === none')
-    assert.deepEqual(O.equals(some('a'), none), false, 'some(a) !== none')
-    assert.deepEqual(O.equals(none, some('a')), false, 'none !== some(a)')
-    assert.deepEqual(O.equals(some('a'), some('a')), true, 'some(a) === some(a)')
-    assert.deepEqual(O.equals(some('a'), some('b')), false, 'some(a) !== some(b)')
+  it('getOrd', () => {
+    const OS = _.getOrd(ordString)
+    assert.deepStrictEqual(OS.compare(_.none, _.none), 0)
+    assert.deepStrictEqual(OS.compare(_.some('a'), _.none), 1)
+    assert.deepStrictEqual(OS.compare(_.none, _.some('a')), -1)
+    assert.deepStrictEqual(OS.compare(_.some('a'), _.some('a')), 0)
+    assert.deepStrictEqual(OS.compare(_.some('a'), _.some('b')), -1)
+    assert.deepStrictEqual(OS.compare(_.some('b'), _.some('a')), 1)
   })
 
-  it('getOptionOrd', () => {
-    const O = getOrd(ordString)
-    assert.deepEqual(O.compare(none, none), 0, 'none ? none')
-    assert.deepEqual(O.compare(some('a'), none), 1, 'some(a) ? none')
-    assert.deepEqual(O.compare(none, some('a')), -1, 'none ? some(a)')
-    assert.deepEqual(O.compare(some('a'), some('a')), 0, 'some(a) ? some(a)')
-    assert.deepEqual(O.compare(some('a'), some('b')), -1, 'some(a) ? some(b)')
-    assert.deepEqual(O.compare(some('b'), some('a')), 1, 'some(b) ? some(a)')
-  })
-
-  it('mapNullable', () => {
-    type Nested = {
-      foo?: number
-      foo2: {
-        bar2?: string
+  it('chainNullableK', () => {
+    interface X {
+      readonly a?: {
+        readonly b?: {
+          readonly c?: {
+            readonly d: number
+          }
+        }
       }
     }
-    const nested: Nested = {
-      foo2: {}
-    }
-    const nestedOption = some(nested)
-    assert.deepEqual(nestedOption.mapNullable(value => value.foo), none)
-    assert.deepEqual(nestedOption.mapNullable(value => value.foo2), some(nested.foo2))
-    assert.deepEqual(nestedOption.mapNullable(value => value.foo2.bar2), none)
-    assert.deepEqual(none.mapNullable(identity), none)
-  })
-
-  it('ap', () => {
-    const f = (n: number) => n * 2
-    assert.deepEqual(some(2).ap(some(f)), some(4))
-    assert.deepEqual(none.ap(some(f)), none)
-    assert.deepEqual(some(2).ap(none), none)
-    assert.deepEqual(some(2).ap(some(f)), some(4))
-    assert.deepEqual(option.ap(some(f), some(2)), some(4))
-    assert.deepEqual(some(f).ap_(some(2)), some(4))
-    assert.deepEqual(none.ap_(some(2)), none)
-  })
-
-  it('chain', () => {
-    const f = (n: number) => some(n * 2)
-    const g = () => none
-    assert.deepEqual(some(2).chain(f), some(4))
-    assert.deepEqual(some(2).chain(g), none)
-    assert.deepEqual(none.chain(f), none)
+    const x1: X = { a: {} }
+    const x2: X = { a: { b: {} } }
+    const x3: X = { a: { b: { c: { d: 1 } } } }
+    assert.deepStrictEqual(
+      pipe(
+        _.fromNullable(x1.a),
+        _.chainNullableK((x) => x.b),
+        _.chainNullableK((x) => x.c),
+        _.chainNullableK((x) => x.d)
+      ),
+      _.none
+    )
+    assert.deepStrictEqual(
+      pipe(
+        _.fromNullable(x2.a),
+        _.chainNullableK((x) => x.b),
+        _.chainNullableK((x) => x.c),
+        _.chainNullableK((x) => x.d)
+      ),
+      _.none
+    )
+    assert.deepStrictEqual(
+      pipe(
+        _.fromNullable(x3.a),
+        _.chainNullableK((x) => x.b),
+        _.chainNullableK((x) => x.c),
+        _.chainNullableK((x) => x.d)
+      ),
+      _.some(1)
+    )
   })
 
   it('getMonoid', () => {
-    const { concat } = getMonoid(semigroupString)
-    assert.deepEqual(concat(none, none), none)
-    assert.deepEqual(concat(none, some('a')), some('a'))
-    assert.deepEqual(concat(some('a'), none), some('a'))
-    assert.deepEqual(concat(some('b'), some('a')), some('ba'))
-    assert.deepEqual(concat(some('a'), some('b')), some('ab'))
-  })
-
-  it('alt', () => {
-    assert.deepEqual(some(1).alt(some(2)), some(1))
-    assert.deepEqual(some(2).alt(none), some(2))
-    assert.deepEqual((none as Option<number>).alt(some(1)), some(1))
-    assert.deepEqual(none.alt(none), none)
-  })
-
-  it('orElse', () => {
-    assert.deepEqual(some(1).orElse(() => some(2)), some(1))
-    assert.deepEqual(some(2).orElse(() => none), some(2))
-    assert.deepEqual((none as Option<number>).orElse(() => some(1)), some(1))
-    assert.deepEqual(none.orElse(() => none), none)
-  })
-
-  it('extend', () => {
-    const f = (fa: Option<number>) => fa.getOrElse(0)
-    assert.deepEqual(some(2).extend(f), some(2))
-    assert.deepEqual(none.extend(f), none)
-    assert.deepEqual(option.extend(some(2), f), some(2))
+    const { concat } = _.getMonoid(semigroupString)
+    assert.deepStrictEqual(concat(_.none, _.none), _.none)
+    assert.deepStrictEqual(concat(_.none, _.some('a')), _.some('a'))
+    assert.deepStrictEqual(concat(_.some('a'), _.none), _.some('a'))
+    assert.deepStrictEqual(concat(_.some('b'), _.some('a')), _.some('ba'))
+    assert.deepStrictEqual(concat(_.some('a'), _.some('b')), _.some('ab'))
   })
 
   it('fromNullable', () => {
-    assert.deepEqual(fromNullable(2), some(2))
-    assert.deepEqual(fromNullable(null), none)
-    assert.deepEqual(fromNullable(undefined), none)
+    assert.deepStrictEqual(_.fromNullable(2), _.some(2))
+    assert.deepStrictEqual(_.fromNullable(null), _.none)
+    assert.deepStrictEqual(_.fromNullable(undefined), _.none)
   })
 
   it('fromPredicate', () => {
-    const f = fromPredicate(p)
-    assert.deepEqual(f(1), none)
-    assert.deepEqual(f(3), some(3))
-  })
+    const f = _.fromPredicate(p)
+    assert.deepStrictEqual(f(1), _.none)
+    assert.deepStrictEqual(f(3), _.some(3))
 
-  it('traverse', () => {
-    assert.deepEqual(option.traverse(array)(some('hello'), s => []), [])
-    assert.deepEqual(option.traverse(array)(some('hello'), s => [s.length]), [some(5)])
-    assert.deepEqual(option.traverse(array)(none, s => [s]), [none])
-  })
-
-  it('reduce', () => {
-    assert.strictEqual(none.reduce(2, (b, a) => b + a), 2)
-    assert.strictEqual(some(3).reduce(2, (b, a) => b + a), 5)
+    type Direction = 'asc' | 'desc'
+    const parseDirection = _.fromPredicate((s: string): s is Direction => s === 'asc' || s === 'desc')
+    assert.deepStrictEqual(parseDirection('asc'), _.some('asc'))
+    assert.deepStrictEqual(parseDirection('foo'), _.none)
   })
 
   it('getApplySemigroup', () => {
-    const S = getApplySemigroup(semigroupSum)
-    assert.deepEqual(S.concat(none, none), none)
-    assert.deepEqual(S.concat(some(1), none), none)
-    assert.deepEqual(S.concat(none, some(1)), none)
-    assert.deepEqual(S.concat(some(1), some(2)), some(3))
+    const S = _.getApplySemigroup(semigroupSum)
+    assert.deepStrictEqual(S.concat(_.none, _.none), _.none)
+    assert.deepStrictEqual(S.concat(_.some(1), _.none), _.none)
+    assert.deepStrictEqual(S.concat(_.none, _.some(1)), _.none)
+    assert.deepStrictEqual(S.concat(_.some(1), _.some(2)), _.some(3))
   })
 
   it('getApplyMonoid', () => {
-    const M = getApplyMonoid(monoidSum)
-    assert.deepEqual(M.concat(M.empty, none), none)
-    assert.deepEqual(M.concat(none, M.empty), none)
-    assert.deepEqual(M.concat(M.empty, some(1)), some(1))
-    assert.deepEqual(M.concat(some(1), M.empty), some(1))
+    const M = _.getApplyMonoid(monoidSum)
+    assert.deepStrictEqual(M.concat(M.empty, _.none), _.none)
+    assert.deepStrictEqual(M.concat(_.none, M.empty), _.none)
+    assert.deepStrictEqual(M.concat(M.empty, _.some(1)), _.some(1))
+    assert.deepStrictEqual(M.concat(_.some(1), M.empty), _.some(1))
   })
 
   it('getFirstMonoid', () => {
-    const M = getFirstMonoid<number>()
-    assert.deepEqual(M.concat(none, none), none)
-    assert.deepEqual(M.concat(some(1), none), some(1))
-    assert.deepEqual(M.concat(none, some(1)), some(1))
-    assert.deepEqual(M.concat(some(1), some(2)), some(1))
+    const M = _.getFirstMonoid<number>()
+    assert.deepStrictEqual(M.concat(_.none, _.none), _.none)
+    assert.deepStrictEqual(M.concat(_.some(1), _.none), _.some(1))
+    assert.deepStrictEqual(M.concat(_.none, _.some(1)), _.some(1))
+    assert.deepStrictEqual(M.concat(_.some(1), _.some(2)), _.some(1))
   })
 
   it('getLastMonoid', () => {
-    const M = getLastMonoid<number>()
-    assert.deepEqual(M.concat(none, none), none)
-    assert.deepEqual(M.concat(some(1), none), some(1))
-    assert.deepEqual(M.concat(none, some(1)), some(1))
-    assert.deepEqual(M.concat(some(1), some(2)), some(2))
+    const M = _.getLastMonoid<number>()
+    assert.deepStrictEqual(M.concat(_.none, _.none), _.none)
+    assert.deepStrictEqual(M.concat(_.some(1), _.none), _.some(1))
+    assert.deepStrictEqual(M.concat(_.none, _.some(1)), _.some(1))
+    assert.deepStrictEqual(M.concat(_.some(1), _.some(2)), _.some(2))
   })
 
-  it('contains', () => {
-    const x: Option<number> = none
-    assert.equal(x.contains(setoidNumber, 2), false)
-    assert.equal(some(2).contains(setoidNumber, 2), true)
-    assert.equal(some(2).contains(setoidNumber, 1), false)
+  it('elem', () => {
+    assert.deepStrictEqual(_.elem(eqNumber)(2, _.none), false)
+    assert.deepStrictEqual(_.elem(eqNumber)(2, _.some(2)), true)
+    assert.deepStrictEqual(_.elem(eqNumber)(1, _.some(2)), false)
   })
 
   it('isNone', () => {
-    assert.equal(none.isNone(), true)
-    assert.equal(some(1).isNone(), false)
-    assert.equal(some(null).isNone(), false)
-    assert.equal(isNone(none), true)
+    assert.deepStrictEqual(_.isNone(_.none), true)
+    assert.deepStrictEqual(_.isNone(_.some(1)), false)
   })
 
   it('isSome', () => {
-    assert.equal(none.isSome(), false)
-    assert.equal(some(1).isSome(), true)
-    assert.equal(some(null).isSome(), true)
-    assert.equal(isSome(none), false)
+    assert.deepStrictEqual(_.isSome(_.none), false)
+    assert.deepStrictEqual(_.isSome(_.some(1)), true)
   })
 
   it('exists', () => {
-    const x: Option<number> = none
-    const is2 = (a: number) => a === 2
-
-    assert.equal(x.exists(is2), false)
-    assert.equal(some(1).exists(is2), false)
-    assert.equal(some(2).exists(is2), true)
-  })
-
-  it('refine', () => {
-    const x: Option<number | string> = none
-    const isString = (a: any): a is string => typeof a === 'string'
-    assert.equal(x.refine(isString), x)
-    const some1 = some<number | string>(1)
-    assert.equal(some1.refine(isString), none)
-    const someHello = some<number | string>('hello')
-    // explicitly type refinedOption as Option<string> to prove typings work
-    // typing as Option<number> will cause typescript to error
-    const refinedOption: Option<string> = someHello.refine(isString)
-    assert.equal(refinedOption, someHello)
+    const predicate = (a: number) => a === 2
+    assert.deepStrictEqual(pipe(_.none, _.exists(predicate)), false)
+    assert.deepStrictEqual(pipe(_.some(1), _.exists(predicate)), false)
+    assert.deepStrictEqual(pipe(_.some(2), _.exists(predicate)), true)
   })
 
   it('tryCatch', () => {
-    assert.deepEqual(tryCatch(() => JSON.parse('2')), some(2))
-    assert.deepEqual(tryCatch(() => JSON.parse('(')), none)
-  })
-
-  it('fromEither', () => {
-    assert.deepEqual(fromEither(left('foo')), none)
-    assert.deepEqual(fromEither(right(1)), some(1))
-  })
-
-  it('toString', () => {
-    assert.strictEqual(some(2).toString(), 'some(2)')
-    assert.strictEqual(some({ a: 1 }).toString(), 'some({\n  "a": 1\n})')
-  })
-
-  it('fromRefinement', () => {
-    type Direction = 'asc' | 'desc'
-    const parseDirection = fromRefinement((s: string): s is Direction => s === 'asc' || s === 'desc')
-    assert.deepEqual(parseDirection('asc'), some('asc'))
-    assert.deepEqual(parseDirection('foo'), none)
-  })
-
-  it('compact', () => {
-    assert.deepEqual(option.compact(none), none)
-    assert.deepEqual(option.compact(some(none)), none)
-    assert.deepEqual(option.compact(some(some('123'))), some('123'))
-  })
-
-  it('separate', () => {
-    assert.deepEqual(option.separate(none), { left: none, right: none })
-    assert.deepEqual(option.separate(some(left('123'))), { left: some('123'), right: none })
-    assert.deepEqual(option.separate(some(right('123'))), { left: none, right: some('123') })
-  })
-
-  it('filter', () => {
-    const x: Option<number> = none
-    const is2 = (a: number) => a === 2
-    assert.equal(x.filter(is2), x)
-    assert.equal(option.filter(x, is2), x)
-    assert.equal(some(1).filter(is2), none)
-    assert.equal(option.filter(some(1), is2), none)
-    const some2 = some(2)
-    assert.equal(some2.filter(is2), some2)
-    assert.equal(option.filter(some2, is2), some2)
-  })
-
-  it('filterMap', () => {
-    const f = (n: number) => (p(n) ? some(n + 1) : none)
-    assert.deepEqual(option.filterMap(none, f), none)
-    assert.deepEqual(option.filterMap(some(1), f), none)
-    assert.deepEqual(option.filterMap(some(3), f), some(4))
-  })
-
-  it('partition', () => {
-    assert.deepEqual(option.partition(none, p), { left: none, right: none })
-    assert.deepEqual(option.partition(some(1), p), { left: some(1), right: none })
-    assert.deepEqual(option.partition(some(3), p), { left: none, right: some(3) })
-  })
-
-  it('partitionMap', () => {
-    const f = (n: number) => (p(n) ? right(n + 1) : left(n - 1))
-    assert.deepEqual(option.partitionMap(none, f), { left: none, right: none })
-    assert.deepEqual(option.partitionMap(some(1), f), { left: some(0), right: none })
-    assert.deepEqual(option.partitionMap(some(3), f), { left: none, right: some(4) })
-  })
-
-  it('wither', () => {
-    const witherIdentity = option.wither(I)
-    const f = (n: number) => new Identity(p(n) ? some(n + 1) : none)
-    assert.deepEqual(witherIdentity(none, f), new Identity(none))
-    assert.deepEqual(witherIdentity(some(1), f), new Identity(none))
-    assert.deepEqual(witherIdentity(some(3), f), new Identity(some(4)))
-  })
-
-  it('wilt', () => {
-    const wiltIdentity = option.wilt(I)
-    const f = (n: number) => new Identity(p(n) ? right(n + 1) : left(n - 1))
-    assert.deepEqual(wiltIdentity(none, f), new Identity({ left: none, right: none }))
-    assert.deepEqual(wiltIdentity(some(1), f), new Identity({ left: some(0), right: none }))
-    assert.deepEqual(wiltIdentity(some(3), f), new Identity({ left: none, right: some(4) }))
+    assert.deepStrictEqual(
+      _.tryCatch(() => JSON.parse('2')),
+      _.some(2)
+    )
+    assert.deepStrictEqual(
+      _.tryCatch(() => JSON.parse('(')),
+      _.none
+    )
   })
 
   it('getRefinement', () => {
-    const f = (s: string | number): Option<string> => (typeof s === 'string' ? some(s) : none)
-    const isString = getRefinement(f)
-    assert.strictEqual(isString('s'), true)
-    assert.strictEqual(isString(1), false)
-    type A = { type: 'A' }
-    type B = { type: 'B' }
+    const f = (s: string | number): _.Option<string> => (typeof s === 'string' ? _.some(s) : _.none)
+    const isString = _.getRefinement(f)
+    assert.deepStrictEqual(isString('s'), true)
+    assert.deepStrictEqual(isString(1), false)
+    type A = { readonly type: 'A' }
+    type B = { readonly type: 'B' }
     type C = A | B
-    const isA = getRefinement<C, A>(c => (c.type === 'A' ? some(c) : none))
-    assert.strictEqual(isA({ type: 'A' }), true)
-    assert.strictEqual(isA({ type: 'B' }), false)
+    const isA = _.getRefinement<C, A>((c) => (c.type === 'A' ? _.some(c) : _.none))
+    assert.deepStrictEqual(isA({ type: 'A' }), true)
+    assert.deepStrictEqual(isA({ type: 'B' }), false)
+  })
+
+  it('getShow', () => {
+    const S = _.getShow(showString)
+    assert.deepStrictEqual(S.show(_.some('a')), `some("a")`)
+    assert.deepStrictEqual(S.show(_.none), `none`)
+  })
+
+  it('getLeft', () => {
+    assert.deepStrictEqual(_.getLeft(right(1)), _.none)
+    assert.deepStrictEqual(_.getLeft(left('err')), _.some('err'))
+  })
+
+  it('getRight', () => {
+    assert.deepStrictEqual(_.getRight(right(1)), _.some(1))
+    assert.deepStrictEqual(_.getRight(left('err')), _.none)
+  })
+
+  it('throwError', () => {
+    assert.deepStrictEqual(_.throwError(undefined), _.none)
+  })
+
+  it('do notation', () => {
+    assert.deepStrictEqual(
+      pipe(
+        _.some(1),
+        _.bindTo('a'),
+        _.bind('b', () => _.some('b'))
+      ),
+      _.some({ a: 1, b: 'b' })
+    )
+  })
+
+  it('apS', () => {
+    assert.deepStrictEqual(pipe(_.some(1), _.bindTo('a'), _.apS('b', _.some('b'))), _.some({ a: 1, b: 'b' }))
+  })
+
+  it('fromNullableK', () => {
+    const f = _.fromNullableK((n: number) => (n > 0 ? n : null))
+    assert.deepStrictEqual(f(1), _.some(1))
+    assert.deepStrictEqual(f(-1), _.none)
+  })
+
+  // -------------------------------------------------------------------------------------
+  // array utils
+  // -------------------------------------------------------------------------------------
+
+  it('sequenceArray', () => {
+    const arr = A.range(0, 10)
+    assert.deepStrictEqual(pipe(arr, A.map(_.some), _.sequenceArray), _.some(arr))
+
+    assert.deepStrictEqual(pipe(arr, A.map(_.fromPredicate((x) => x > 5)), _.sequenceArray), _.none)
+  })
+
+  it('traverseArray', () => {
+    const arr = A.range(0, 10)
+    assert.deepStrictEqual(pipe(arr, _.traverseArray(_.some)), _.some(arr))
+    assert.deepStrictEqual(pipe(arr, _.traverseArray(_.fromPredicate((x) => x > 5))), _.none)
+  })
+
+  it('traverseArrayWithIndex', () => {
+    const arr = A.range(0, 10)
+    assert.deepStrictEqual(
+      pipe(
+        arr,
+        _.traverseArrayWithIndex((index, _data) => _.some(index))
+      ),
+      _.some(arr)
+    )
+    assert.deepStrictEqual(pipe(arr, _.traverseArrayWithIndex(_.fromPredicate((x) => x > 5))), _.none)
   })
 })

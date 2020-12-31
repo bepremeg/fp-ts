@@ -1,17 +1,21 @@
 {
   "compilerOptions": {
-    "outDir": "./lib",
-    "declaration": true,
+    "noEmit": true,
+    "outDir": "./dist/lib",
     "target": "es5",
     "module": "commonjs",
     "moduleResolution": "node",
+    "esModuleInterop": true,
+    "lib": ["es6", "dom"],
+    "sourceMap": false,
+    "declaration": true,
     "strict": true,
-    "noImplicitReturns": false,
+    "noImplicitReturns": true,
     "noUnusedLocals": true,
-    "noUnusedParameters": false,
+    "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
     "forceConsistentCasingInFileNames": true,
-    "lib": ["es6"]
+    "stripInternal": true
   },
-  "include": ["./src/**/*"]
+  "include": ["./src", "./test", "./scripts"]
 }

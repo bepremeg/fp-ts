@@ -11,633 +11,928 @@
 > - [Experimental]
 > - [Deprecation]
 
-**Note**: Gaps between patch versions are faulty/broken releases. **Note**: A feature tagged as Experimental is in a
+**Note**: Gaps between patch versions are faulty/broken releases.
+**Note**: A feature tagged as Experimental is in a
 high state of flux, you're at risk of it changing without notice.
 
-# 1.9.0
+# 2.9.3
 
-- **New Feature**
-  - add `getSemigroup`, `getApplySemigroup`, `getApplyMonoid` to `TaskEither`, https://github.com/gcanti/fp-ts/pull/563 (@mlegenhausen)
-  - add `increment` and `decrement` functions, https://github.com/gcanti/fp-ts/pull/557 (@gcanti)
-  - add `Zipper` module, https://github.com/gcanti/fp-ts/pull/558 (@gcanti)
-  - add `getMeetMonoid`, `getJoinMonoid`, https://github.com/gcanti/fp-ts/pull/548 (@gcanti)
 - **Polish**
-  - Never emit sourcemaps, https://github.com/gcanti/fp-ts/pull/569 (@scotttrinh)
-  - add `Array.empty`, https://github.com/gcanti/fp-ts/pull/556 (@gcanti)
+  - add more `/*#__PURE__*/` comments to improve tree shaking, #1370 (@OliverJAsh)
 
-# 1.8.1
+# 2.9.2
 
-- **Bug Fix**
-  - add module augmentation to `Free`, https://github.com/gcanti/fp-ts/pull/559 (@gcanti)
+- **Polish**
+  - add more `/*#__PURE__*/` comments to improve tree shaking, #1368 (@OliverJAsh)
 
-# 1.8.0
+# 2.9.1
 
-- **New Feature**
-  - add `IORef` module (@gcanti)
+- **Polish**
+  - `Array` / `ReadonlyArray`
+    - `sort`: return the input when length <= 1, closes #1357 (@gcanti)
+    - `uniq`: return the input when length <= 1 (@gcanti)
 
-# 1.7.1
-
-- **Internal**
-  - add refinement overloading to `Array.findFirst`, closes #522 (@gcanti)
-
-# 1.7.0
+# 2.9.0
 
 - **New Feature**
-  - add `Array.foldr`, `Array.foldrL` (@PierreCooper)
-  - add `Compactable` type class and related instances (@raveclassic)
-  - add `Filterable` type class and related instances (@raveclassic)
-  - add `Whitherable` type class and related instances (@raveclassic)
-  - add `State.prototype.applyFirst`, `State.prototype.applySecond` (@gcanti)
-  - add `Option.getRefinement` (@gcanti)
-  - add `Foldable.traverse` (@gcanti)
-  - add `Option.getApplySemigroup`, `Option.getApplyMonoid` (@gcanti)
-  - add `Either.getSemigroup`, `Either.getApplySemigroup`, `Either.getApplyMonoid` (@gcanti)
-  - add `Task.delay` (@gcanti)
-  - add `NonEmptyArray.group`, `NonEmptyArray.groupSort` (@MaximeRDY)
-- **Bug Fix**
-  - fix `Random.randomRange` implementation (@gcanti)
-  - fix `Set.partitionMap` signature (@gcanti)
-  - sort keys in `StrMap.collect` (@gcanti)
+
+  - `Array`
+    - add `altW` (@gcanti)
+    - add `intersperse` (@marcotoniut)
+    - add `prependToAll` (@marcotoniut)
+    - add `every` (@gcanti)
+    - add `some` (@gcanti)
+    - add `Do` (@gcanti)
+  - `Either`
+    - add `altW` (@gcanti)
+    - add `fromNullableK` (@gcanti)
+    - add `chainNullableK` (@gcanti)
+    - add `traverseArrayWithIndex` (@mohaalak @iamomiid)
+    - add `traverseArray` (@mohaalak @iamomiid)
+    - add `sequenceArray` (@mohaalak @iamomiid)
+    - add `Do` (@gcanti)
+    - add `filterOrElseW` (@gcanti)
+  - `Identity`
+    - add `altW` (@gcanti)
+    - add `Do` (@gcanti)
+  - `IO`
+    - add `traverseArrayWithIndex` (@mohaalak @iamomiid)
+    - add `traverseArray` (@mohaalak @iamomiid)
+    - add `sequenceArray` (@mohaalak @iamomiid)
+    - add `Do` (@gcanti)
+  - `IOEither`
+    - add `altW` (@gcanti)
+    - add `traverseArrayWithIndex` (@mohaalak @iamomiid)
+    - add `traverseArray` (@mohaalak @iamomiid)
+    - add `sequenceArray` (@mohaalak @iamomiid)
+    - add `traverseSeqArrayWithIndex` (@mohaalak @iamomiid)
+    - add `traverseSeqArray` (@mohaalak @iamomiid)
+    - add `sequenceSeqArray` (@mohaalak @iamomiid)
+    - add `Do` (@gcanti)
+    - add `filterOrElseW` (@gcanti)
+  - `NonEmptyArray`
+    - add `altW` (@gcanti)
+    - add `uncons` (@marcotoniut)
+    - add `unsnoc` (@marcotoniut)
+    - add `intersperse` (@marcotoniut)
+    - add `prependToAll` (@marcotoniut)
+    - add `Do` (@gcanti)
+  - `Option`
+    - add `altW` (@gcanti)
+    - add `fromNullableK` (@gcanti)
+    - add `chainNullableK` (@gcanti)
+    - add `traverseArrayWithIndex` (@mohaalak @iamomiid)
+    - add `traverseArray` (@mohaalak @iamomiid)
+    - add `sequenceArray` (@mohaalak @iamomiid)
+    - add `Do` (@gcanti)
+  - `Reader`
+    - add `traverseArrayWithIndex` (@mohaalak @iamomiid)
+    - add `traverseArray` (@mohaalak @iamomiid)
+    - add `sequenceArray` (@mohaalak @iamomiid)
+    - add `Do` (@gcanti)
+  - `ReaderEither`
+    - add `altW` (@gcanti)
+    - add `traverseArrayWithIndex` (@mohaalak @iamomiid)
+    - add `traverseArray` (@mohaalak @iamomiid)
+    - add `sequenceArray` (@mohaalak @iamomiid)
+    - add `Do` (@gcanti)
+    - add `filterOrElseW` (@gcanti)
+  - `ReaderTask`
+    - add `traverseArrayWithIndex` (@mohaalak @iamomiid)
+    - add `traverseArray` (@mohaalak @iamomiid)
+    - add `sequenceArray` (@mohaalak @iamomiid)
+    - add `traverseSeqArrayWithIndex` (@mohaalak @iamomiid)
+    - add `traverseSeqArray` (@mohaalak @iamomiid)
+    - add `sequenceSeqArray` (@mohaalak @iamomiid)
+    - add `Do` (@gcanti)
+  - `ReaderTaskEither`
+    - add `altW` (@gcanti)
+    - add `traverseArrayWithIndex` (@mohaalak @iamomiid)
+    - add `traverseArray` (@mohaalak @iamomiid)
+    - add `sequenceArray` (@mohaalak @iamomiid)
+    - add `traverseSeqArrayWithIndex` (@mohaalak @iamomiid)
+    - add `traverseSeqArray` (@mohaalak @iamomiid)
+    - add `sequenceSeqArray` (@mohaalak @iamomiid)
+    - add `Do` (@gcanti)
+    - add `filterOrElseW` (@gcanti)
+  - `ReadonlyArray`
+    - add `altW` (@gcanti)
+    - add `intersperse` (@marcotoniut)
+    - add `prependToAll` (@marcotoniut)
+    - add `every` (@gcanti)
+    - add `some` (@gcanti)
+    - add `Do` (@gcanti)
+  - `ReadonlyNonEmptyArray`
+    - add `altW` (@gcanti)
+    - add `uncons` (@marcotoniut)
+    - add `unsnoc` (@marcotoniut)
+    - add `intersperse` (@marcotoniut)
+    - add `prependToAll` (@marcotoniut)
+    - add `Do` (@gcanti)
+  - `State`
+    - add `traverseArrayWithIndex` (@mohaalak @iamomiid)
+    - add `traverseArray` (@mohaalak @iamomiid)
+    - add `sequenceArray` (@mohaalak @iamomiid)
+  - `StateReaderTaskEither`
+    - add `altW` (@gcanti)
+    - add `traverseArrayWithIndex` (@mohaalak @iamomiid)
+    - add `traverseArray` (@mohaalak @iamomiid)
+    - add `sequenceArray` (@mohaalak @iamomiid)
+    - add `filterOrElseW` (@gcanti)
+  - `Task`
+    - add `traverseArrayWithIndex` (@mohaalak @iamomiid)
+    - add `traverseArray` (@mohaalak @iamomiid)
+    - add `sequenceArray` (@mohaalak @iamomiid)
+    - add `traverseSeqArrayWithIndex` (@mohaalak @iamomiid)
+    - add `traverseSeqArray` (@mohaalak @iamomiid)
+    - add `sequenceSeqArray` (@mohaalak @iamomiid)
+    - add `Do` (@gcanti)
+  - `TaskEither`
+    - add `altW` (@gcanti)
+    - add `traverseArrayWithIndex` (@mohaalak @iamomiid)
+    - add `traverseArray` (@mohaalak @iamomiid)
+    - add `sequenceArray` (@mohaalak @iamomiid)
+    - add `traverseSeqArrayWithIndex` (@mohaalak @iamomiid)
+    - add `traverseSeqArray` (@mohaalak @iamomiid)
+    - add `sequenceSeqArray` (@mohaalak @iamomiid)
+    - add `Do` (@gcanti)
+    - add `filterOrElseW` (@gcanti)
+  - `Tree`
+    - add `Do` (@gcanti)
+
 - **Deprecation**
-  - deprecate `Traversable.traverse` (@raveclassic)
-  - deprecate `Foldable.traverse_` (@gcanti)
-- **Internal**
-  - add `Applicative2C` overloadings to `Traversable.traverse` (@gcanti)
+  - `Option`
+    - deprecate `mapNullable` in favour of `chainNullableK` (@gcanti)
+  - `StateReaderTaskEither`
+    - deprecate `stateReaderTaskEitherSeq` because is useless, `stateReaderTaskEither` is already sequential (@gcanti)
 
-# 1.6.2
+# 2.8.6
 
 - **Bug Fix**
-  - add missing `readonly` modifiers (@gcanti)
-    - `BoundedJoinSemilattice`
-    - `BoundedMeetSemilattice`
-    - `HeytingAlgebra`
-    - `JoinSemilattice`
-    - `MeetSemilattice`
-  - handle `null`, `undefined` in `function.toString` (@gcanti)
-  - add overloadings to `Free.foldFree`, fix #470 (@gcanti)
+  - fix #1350 (@gcanti)
 
-# 1.6.1
+# 2.8.5
 
 - **Polish**
-  - `Reader.local`, `ReaderTaskEither.local` should be able to change the environment type (@gcanti)
-  - add `Reader.prototype.local`, `ReaderTaskEither.prototype.local` (@gcanti)
+  - `IOEither`
+    - export missing `of` function (@gcanti)
+  - `ReaderEither`
+    - export missing `of` function (@gcanti)
 
-# 1.6.0
+# 2.8.4
 
-- **New Feature**
-  - add `NonEmptyArray.prototype.last` (@raveclassic)
-  - add `IOEither` module (@leemhenson)
-  - add `orElse` method to `Either`, `Identity`, `Option` (@raveclassic)
-  - add `Alt` instance to `TaskEither` (@gcanti)
-  - add `NonEmptyArray.prototype.sort` (@raveclassic)
-  - add `TaskEither.fromIOEither` (@gcanti)
-  - add `applyFirst` method to `IO`, `Task`, `IOEither`, `TaskEither` (@gcanti)
-  - move `ReaderTaskEither` from examples into `src` (@leemhenson)
-  - add `NonEmptyArray.prototype.reverse` (@raveclassic)
-  - add `TaskEither.fromPredicate` (@leemhenson)
-  - add `Tree` module (@gcanti)
-  - make `Either.filterOrElseL` more general (@gcanti)
-  - add `Either.refineOrElse`, `Either.refineOrElseL` (@gcanti)
-  - add `Either.fromRefinement` (@gcanti)
-- **Bug Fix**
-  - handle undefined errors in callback of `TaskEither.taskify` (@dmechas)
-  - fix overloading typings of `TaskEither.taskify` (@gcanti)
-- **Internal**
-  - make `Writer.prototype.map` lazy (@gcanti)
-- **Documentation**
-  - handle `example` and `link` tags (@gcanti)
-
-# 1.5.0
-
-- **New Feature**
-  - Allow the usage of a custom `Semigroup` for `StrMap.getMonoid` (@mlegenhausen)
-  - add `applySecond` method to `IO`, `Task`, `TaskEither`, closes #418 (@gcanti)
-  - add `TaskEither.fromIO` (@gcanti)
-  - add `Apply.sequenceT` (@raveclassic)
-  - add `TaskEither.taskify`, utility to convert callback-based node APIs, closes #422 (@gcanti)
-
-# 1.4.1
-
-- **Bug Fix**
-  - fix semigroup usage in `Tuple.ap` implementation (@gcanti)
-
-# 1.4.0
-
-- **New Feature**
-  - add `getDictionarySemigroup`, `getObjectSemigroup` to `Semigroup` (@raveclassic)
-  - add `getDictionaryMonoid` to `Monoid` (@raveclassic)
-  - add `Setoid.setoidDate` and `Ord.ordDate` (@mlegenhausen)
-  - add `StrMap#filter` (@mlegenhausen)
-  - add `Apply.getSemigroup`, `Applicative.getMonoid` (@gcanti)
-  - add lattice typeclass hierarchy, closes #412 (@gcanti)
-    - `BooleanAlgebra`
-    - `BoundedDistributiveLattice`
-    - `BoundedJoinSemilattice`
-    - `BoundedLattice`
-    - `BoundedMeetSemilattice`
-    - `DistributiveLattice`
-    - `HeytingAlgebra`
-    - `JoinSemilattice`
-    - `MeetSemilattice`
-- **Internal**
-  - add more `Travserable.sequence` overloadings (@gcanti)
-  - upgrade to typescript@2.8.3 (@gcanti)
-  - use `getObjectSemigroup` in `StrMap.concat` (@gcanti)
-
-# 1.3.0
-
-- **New Feature**
-  - add `Array.uniq` (@alex-ketch)
-  - add `NonEmptyArray.prototype.min` and `NonEmptyArray.prototype.max` (@raveclassic)
-  - add `refine` method to `Option`, closes #396 (@wmaurer)
-  - add `Ord.getDualOrd` (@gcanti)
-  - add support for `Monad2C` and `Monad3C` to `OptionT`, closes #379 (@gcanti)
-  - add `TaskEither.fromLeft` (@gcanti)
-  - add `listen`, `pass`, `listens`, `censor` to `Writer` (@gcanti)
-  - add `Option.fromRefinement` (@gcanti)
-  - add `Array.sortBy`, `Array.sortBy1` (@gcanti)
-  - add `Either.fromOptionL`, closes #384 (@gcanti)
-  - add `Either.filterOrElse`, `Either.filterOrElseL`, closes #382 (@gcanti)
-- **Bug Fix**
-  - sort keys in `StrMap.reduce` (@gcanti)
-- **Internal**
-  - added rimraf and updated npm scripts (@wmaurer)
-  - upgrade to tslint@5.9.1, tslint-config-standard@7.0.0 (@gcanti)
-  - add issue template (@gcanti)
 - **Polish**
-  - optimize `Semigroup.fold` (@gcanti)
+  - `IOEither`
+    - add `ApplicativePar` instance (@gcanti)
+    - add `ApplicativeSeq` instance (@gcanti)
+- **Deprecation**
+  - `IOEither`
+    - deprecate `Applicative` in favour of `ApplicativePar` (@gcanti)
 
-# 1.2.0
+# 2.8.3
 
-- **New Feature**
-  - Make `TaskEither` an instance of `BiFunctor` (@teves-castro)
-  - add `EitherT.bimap` (@teves-castro)
-  - add `partitionMap` to `Set` (@sledorze)
-  - add `getOrd` to `Option` (@sledorze)
-  - add `partition` to `Set` (@sledorze)
-  - add `contramap` to `Setoid` (@sledorze)
-  - add `getOrd` to `Array` (@sledorze)
-  - add `chain` to `Set` (@sledorze)
-  - add `map` to `Set` (@sledorze)
-  - add `fromArray` to `Set` (@sledorze)
-  - add `StateT.fromState` (@gcanti)
-  - add `StateT.liftF` (@gcanti)
-  - add `ReaderT.fromReader` (@gcanti)
-- **Bug Fix**
-  - fix `Alt` instance of `Validation` (@sledorze)
-  - fix `EitherT.chain` signature (@gcanti)
-  - use `Type*` in `EitherT1`, `EitherT2` (@gcanti)
-  - use `Type*` in `StateT1`, `StateT2` (@gcanti)
-  - use `Type*` in `ReaderT1`, `ReaderT2` (@gcanti)
-  - Add `readonly` modifier to type classes properties (@gcanti)
-- **Internal**
-  - make 'Set.difference' do less work (@sledorze)
-  - remove unecessary closure creation in `lefts`, `rights` and `mapOption` (@sledorze)
-  - remove unnecessary closures (mainly `fold`s) (@sledorze)
-  - remove closure creation of Option 'ap' function (@sledorze)
-  - add `URIS3` overloadings to `StateT` (@gcanti)
-  - add `URIS3` overloadings to `ReaderT` (@gcanti)
-  - use definite assignement assertion for phantom fields (@gcanti)
-  - upgrade to prettier@1.11.0 (@gcanti)
-
-# 1.1.0
-
-- **New Feature**
-  - add `scanLeft`, `scanRight` (@PaNaVTEC)
-  - add an optional `onerror` argument to `Either.tryCatch`, fix #323 (@gcanti)
-- **Bug Fix**
-  - `Either.tryCatch` now refines the error (@gcanti)
-- **Docs**
-  - Option, alt method (@piq9117)
-  - add laws for `Setoid`, `Ord`, `Functor`, `Apply`, `Applicative`, `Chain`, `Monad`, `Alt`, `Alternative`, `Plus`
-    (@gcanti)
-- **Internal**
-  - upgrade to `typescript@2.7.2` (@gcanti)
-
-# 1.0.1
-
-- **Bug Fix**
-  - add phantom fields to curried type classes, fix #316 (@gcanti)
-  - fix `Unfoldable.replicateA` signatures (@gcanti)
-- **Internal**
-  - optimize Foldable.oneOf (@gcanti)
-  - optimize Foldable.traverse\_ (@gcanti)
-  - optimize Foldable.sequence\_ (@gcanti)
-  - optimize Foldable.foldr (@gcanti)
-
-# 1.0.0
-
-- **Breaking Change**
-  - see https://github.com/gcanti/fp-ts/pull/312 (@gcanti)
-
-# 0.6.8
-
-- **New Feature**
-  - `Validation`: add `getOrElse`, `getOrElseValue`, closes #278 (@gcanti)
-  - add `Functor2`, `Functor3`, `Apply2`, `Apply3`, `Applicative2`, `Applicative3`, `Chain2`, `Chain3`, `Monad2`,
-    `Monad3` in order to better support MTL style (@gcanti)
-- **Bug Fix**
-  - Flow: reverse order of overloadings in curry declaration, fix #299 (@gcanti)
-  - `Set`: fix `union` / `insert` / `toArray` / `reduce` definitions (@gcanti)
-- **Experimental**
-  - `Validation`: add `chain` (@gcanti)
-- **Internal**
-  - fix typescript@next errors (@gcanti)
-- **Documentation**
-  - add `StateTaskEither`, `TaskOption` examples (@gcanti)
-
-# 0.6.7
-
-- **New Feature**
-  - Ordering: add fromNumber, toNumber (@gcanti)
-  - function: add unsafeCoerce (@gcanti)
-  - add Set module, closes #161 (@gcanti)
-
-# 0.6.6
-
-- **New Feature**
-  - `Array`: add `rotate` (@gcanti)
-  - add some `Foldable` functions (@gcanti)
-    - `minimum`
-    - `maximum`
-    - `sum`
-    - `product`
-    - `foldM`
-    - `oneOf`
-    - `elem`
-    - `find`
-  - `Option`: add `tryCatch` (@gcanti)
-  - `Ring`: add `getProductRing` (@gcanti)
-  - `Setoid`: add `getProductSetoid` (@gcanti)
-  - `Ord`: add `getProductOrd` (@gcanti)
-- **Internal**
-  - perf optimizations (@sledorze, @gcanti)
-  - travis: use node 8 (@gcanti)
-
-# 0.6.5
-
-- **Bug Fix**
-  - Flow: use `$NonMaybeType` for `fromNullable` and `mapNullable` (@gcanti)
-
-# 0.6.4
-
-- **New Feature**
-  - Array: add `getSemigroup` / `getMonoid`, fix #272 (@gcanti)
-  - Setoid: add `getRecordSetoid` (@gcanti)
-  - add missing `ap_` methods (Reader, State, Writer) (@gcanti)
-  - type `is*` methods as type guards (Option, Either, Validation, These) (@gcanti)
-- **Experimental**
-  - add Flowtype support (@gcanti)
 - **Polish**
-  - Correct `ap_` parameter name (@OliverJAsh)
-  - update Prettier version (@gcanti)
-  - fix `getRecordSemigroup` signature (@gcanti)
-  - fix `getRecordMonoid` signature (@gcanti)
-  - format markdown files with prettier (@gcanti)
+  - `Reader`
+    - export `Strong` instance (@urgent)
+    - export `Choice` instance (@gcanti)
 
-# 0.6.3
+# 2.8.2
 
-- **New Feature**
-  - move semigroup methods from Monoid.ts to Semigroup.ts (@valery-paschenkov)
-
-# 0.6.2
-
-- **New Feature**
-  - add `function.constNull` and `function.constUndefined` (@raveclassic)
-
-# 0.6.1
-
-- **Breaking Change**
-  - upgrade to latest TypeScript (2.6.1), fix #244 (@gcanti)
-
-# 0.5.4
-
-- **New Feature**
-  - `Array`: add `findFirst` and `findLast` functions (@chasent)
-  - `Option`: add `getOrElseValue`, `filter`, `mapNullable` (@raveclassic)
-  - `Either`: add `getOrElseValue` (@raveclassic)
-  - `Either`: add `fromNullable` (@gcanti)
-- **Bug Fix**
-  - `Either`: `equals` now accepts a `Setoid<L>` other than `Setoid<A>`, fix #247 (@gcanti)
-  - `Validation`: `equals` now accepts a `Setoid<L>` other than `Setoid<A>`, fix #247 (@gcanti)
-
-# 0.5.3
-
-- **New Feature**
-  - add `Invariant` (@gcanti)
-  - `Semigroup`: add `getRecordSemigroup`, `getRecordMonoid`, `getMeetSemigroup`, `getJoinSemigroup` (@gcanti)
-  - `Ord`: add `getSemigroup`, `fromCompare`, `contramap` (@gcanti)
-  - `Option`: add `toUndefined` method (@vegansk)
-  - `These`: add `getMonad` (@gcanti)
-  - `Foldable`: add `fold` (@gcanti)
-  - add `TaskEither` (@gcanti)
-  - `Validation`: add `fromEither` (@gcanti)
-  - `Task`: add `fromIO` (@gcanti)
-  - `Either`: pass value to `getOrElse` (@jiayihu)
-  - `Array`: add `span` function (@gcanti)
-- **Bug Fix**
-  - `Array`: fix `takeWhile`, `dropWhile` (@gcanti)
-- **Documentation**
-  - add `Moore` machine example (@gcanti)
-  - add MTL style example (@gcanti)
-  - starting API documentation (@gcanti)
-- **Internal**
-  - fix `Semigroupoid` definition (@gcanti)
 - **Polish**
-  - `Ordering`: shorten `orderingSemigroup` definition (@gcanti)
-  - `Task`: prefer `{}` to `any`, fix #231 (@OliverJAsh)
-  - upgrade to `prettier@1.7.0` (@gcanti)
-  - `These`: fix `fold` and `bimap` definitions (@gcanti)
-  - fix `ArrayOption` example (@gcanti)
-  - `State`: remove `Endomorphism` type alias (@gcanti)
-  - `Monoidal`: use `liftA2` (@gcanti)
-
-# 0.5.2
-
-- **Bug Fix**
-  - fixed EitherT to only run code on the left once, closes #219 (@nfma)
-  - fixed OptionT to only run code on none once (@gcanti)
-
-# 0.5.1
-
-- **Breaking Change**
-  - migrate to curried APIs when possible (@raveclassic, @gcanti)
-  - remove useless static `of`s (@gcanti)
-- **New Feature**
-  - Array: add zip and zipWith (@gcanti)
-  - Monoid: add getArrayMonoid (@gcanti)
-  - Tuple
-    - add toString (@gcanti)
-    - add getApplicative (@gcanti)
-    - add getChainRec (@gcanti)
-  - Setoid: add getArraySetoid (@gcanti)
+  - increase the supported number of arguments of pipe function (@heka1024)
 - **Bug fix**
-  - Store
-    - fix extend implementation (@gcanti)
-    - fix toString (@gcanti)
-- **Polish**
-  - Plus: remove any from signatures (@gcanti)
-
-# 0.4.6
-
-- **New Feature**
-  - add endomorphism monoid, fix #189 (@gcanti)
-  - add a default implementation of `foldr` using `foldMap` (@gcanti)
-  - add `insert`, `remove` and `pop` to `StrMap` (@gcanti)
-  - improve `voidLeft`, `voidRight` type inference, fix #191 (@gcanti)
-- **Bug Fix**
-  - StrMap.size returns a wrong number of key/value pairs, fix #186 (@gcanti)
-- **Documentation**
-  - start book "fp-ts by examples"
-
-# 0.4.5
-
-- **New Feature**
-  - add `contains`, `isNone`, `isSome`, `exists` methods to `Option` (@alexandervanhecke)
-  - add `Exception` module (@gcanti)
-  - add `Pair` module (@gcanti)
-  - add `Trace` module (@gcanti)
-  - add `IxMonad` module (@gcanti)
-  - add `IxIO` module (@gcanti)
-  - add `Either.fromOption` (@gcanti)
-- **Documentation**
-  - add `StateT` example (@gcanti)
-  - add `IxIO` example (@gcanti)
-
-# 0.4.3
-
-- **New Feature**
-  - add type-level dictionaries in order to reduce the number of overloadings (@gcanti)
-  - add typechecks to the type-level HKT dictionary (@SimonMeskens)
-  - add Task.tryCatch, closes #159 (@gcanti)
-  - use the bottom `never` type for none, closes #160 (@gcanti)
-  - add Random module (@gcanti)
-  - add Console module (@gcanti)
-  - add FantasyFilterable (@SimonMeskens)
-  - add FantasyWitherable (@SimonMeskens)
-- **Documentation**
-  - add ReaderIO example (@gcanti)
-  - add EitherOption example (@gcanti)
-- **Polish**
-  - TaskEither: rename fromPromise to tryCatch (@gcanti)
+  - revert `groupBy` change in #1286 (@gcanti)
 - **Internal**
-  - add fix-prettier task (@gcanti)
-  - remove typings-checker (doesn’t work with ts 2.4.1) (@gcanti)
+  - define all non-pipeable internal functions in terms of the corresponding pipeable versions (@gcanti)
 
-# 0.4.0
-
-- **Breaking Change**
-  - Tuple (wrapped)
-  - Dictionary (wrapped, renamed to StrMap)
-  - changed
-    - Applicative.getCompositionApplicative (also renamed to getApplicativeComposition)
-    - Foldable.getCompositionFoldable (also renamed to getFoldableComposition)
-    - Functor.getCompositionFunctor (also renamed to getFunctorComposition)
-    - Traversable.getCompositionTraversable (also renamed to getTraversableComposition)
-    - Free (usage)
-    - NaturalTransformation
-    - ReaderT
-    - StateT
-  - removed (temporarily or because the porting is not possible)
-    - Id (not possible)
-    - Traced
-    - IxMonad
-    - Mealy
-    - FreeAp
-
-# 0.3.5
-
-- **New Feature**
-  - Functor: add `flap`, closes #129 (@gcanti)
-  - Add getSetoid instances, closes #131 (@gcanti)
-  - Add "flipped" ap method to FantasyApply instances, closes #132 (@gcanti)
-- **Polish**
-  - Examples: correct TaskEither fold method (@OliverJAsh)
-
-# 0.3.4
-
-- **Bug Fix**
-  - `Array.snoc` returns wrong results with nested arrays, fix #133 (@gcanti)
-
-# 0.3.3
-
-- **New Feature**
-  - Functor: add `voidRight` / `voidLeft`, closes #120 (@gcanti)
-  - Add `Mealy` machine, closes #122 (@gcanti)
-  - Add `Filterable`, closes #124 (@gcanti)
-  - Add `Witherable`, closes #125 (@gcanti)
-- **Polish**
-  - upgrade to ts 2.3.4
-  - Either: make `right` === `of\
-  - IxIO example: use new proof
-
-# 0.3.2
-
-- **Bug Fix**
-  - IxMonad: remove wrong type constraint (@gcanti)
-
-# 0.3.1
-
-- **New Feature**
-  - add `Free Applicative`, closes #106 (@gcanti)
-  - Add `Semiring`, closes #107 (@gcanti)
-  - Add `Ring`, closes #108 (@gcanti)
-  - Add `Field`, closes #109 (@gcanti)
-  - Improve `toString` methods, closes #116 (@gcanti)
-- **Bug Fix**
-  - NonEmptyArray: add missing static `of` (@gcanti)
-  - add `_tag` type annotations, closes #118 (@gcanti)
-- **Internal**
-  - Change `proof`s of implementation (@rilut)
-  - use prettier, closes #114 (@gcanti)
-
-# 0.3.0
-
-- **New Feature**
-  - add `StateT` monad transformer, closes #104 (@gcanti)
-  - add `Store` comonad, closes #100 (@rilut)
-  - add `Last` monoid, closes #99 (@gcanti)
-  - add `Id` monadfunctor (@gcanti)
-  - Array: add extend instance (@gcanti)
-  - NonEmptyArray: add comonad instance (@gcanti)
-  - `examples` folder
-  - `exercises` folder
-- **Polish**
-  - Tuple: remove StaticFunctor checking (@rilut)
-- **Breaking Change** (@gcanti)
-  - required typescript version: **2.3.3**
-  - drop `Static` prefix in type classes
-  - Change contramap signature, closes #32
-  - Validation: remove deprecated functions
-  - Foldable/toArray
-  - Dictionary/fromFoldable
-  - Dictionary/toUnfoldable
-  - Profunctor/lmap
-  - Profunctor/rmap
-  - Unfoldable/replicate
-  - compositions: renaming and signature changes
-    - `getFunctorComposition` -> `getCompositionFunctor`
-    - `getApplicativeComposition` -> `getCompositionApplicative`
-    - `getFoldableComposition` -> `getCompositionFoldable`
-    - `getTraversableComposition` -> `getCompositionTraversable`
-  - `OptionT`, `EitherT`, `ReaderT` refactoring
-  - drop `IxMonadT`, move `IxIO` to the `examples` folder
-  - drop `Trans` module
-  - `Free` refactoring
-  - drop `rxjs` dependency
-  - drop `lib-jsnext` folder
-  - make `None` constructor private
-  - remove `Pointed` and `Copointed` type classes
-
-# 0.2.9
-
-- **New Feature**
-  - add Monoidal type class (@gcanti)
-- **Bug Fix**
-  - fix `foldMap`, closes #89 (@gcanti)
-  - replace `instanceof` checks with valued `_tag`s, fix #96 (@gcanti, @sledorze)
-
-# 0.2.8
-
-- **New Feature**
-  - Monoid: add `getFunctionStaticMonoid`, closes #70 (@gcanti)
-  - Foldable: add `traverse_` and `sequence_`, closes #71 (@gcanti)
-  - add `getStaticMonad` to `EitherT`, `OptionT`, `ReaderT`, closes #81 (@gcanti)
-  - Applicative: add `when`, closes #77 (@gcanti)
-  - indexed monad type class and `IxMonadT`, closes #73 (@gcanti)
-  - Array / function: add refinements, closes #68 (@gcanti, @sledorze)
-- **Bug Fix**
-  - Either: `of` should return `Either`, fix #80 (@gcanti)
-  - fix `toArray` (@gcanti)
-
-# 0.2.7
-
-- **New Feature**
-  - `Foldable` module: add `intercalate` function, fix #65 (@gcanti)
-  - Add `Profunctor` typeclass, fix #33 (@gcanti, @sledorze)
-  - Add `These`, fix #47 (@gcanti)
-  - `Apply` module: add `applyFirst` and `applySecond`, fix #60 (@sledorze)
-- **Bug Fix**
-  - fix `Either.ap` (@sledorze)
-
-# 0.2.6
+# 2.8.1
 
 - **Polish**
-  - expose experimental modules (@danielepolencic, @gcanti)
+  - fix `HKT` typings duplication (which might break module augmentation)
 
-# 0.2.5
+# 2.8.0
 
 - **New Feature**
-  - add `getOrElse` to `Either`, fix #39 (@sledorze)
-  - add composition of functors, applicatives, foldables, traversables, fix #53 (@gcanti)
+  - expose `fp-ts` modules without lib/es6 prefix, #1241 (@StefanoMagrassi)
+  - `Array`
+    - add `apS` (@gcanti)
+    - add `bind` (@gcanti)
+    - add `bindTo` (@gcanti)
+  - `Either`
+    - add `apW` (@gcanti)
+    - add `apS` (@gcanti)
+    - add `apSW` (@gcanti)
+    - add `bind` (@gcanti)
+    - add `bindTo` (@gcanti)
+    - add `bindW` (@gcanti)
+    - add `chainFirstW`, #1273 (@leemhenson)
+    - add `getFilterable` (@gcanti)
+  - `Foldable`
+    - add `toArray`, #1272 (@newswim)
+    - add `reduceM` (@gcanti)
+  - `Identity`
+    - add `apS` (@gcanti)
+    - add `bind` (@gcanti)
+    - add `bindTo` (@gcanti)
+  - `IO`
+    - add `apS` (@gcanti)
+    - add `bind` (@gcanti)
+    - add `bindTo` (@gcanti)
+  - `IOEither`
+    - add `apS` (@gcanti)
+    - add `apSW` (@gcanti)
+    - add `bind` (@gcanti)
+    - add `bindTo` (@gcanti)
+    - add `bindW` (@gcanti)
+    - add `chainFirstW`, #1273 (@leemhenson)
+  - `NonEmptyArray`
+    - add `apS` (@gcanti)
+    - add `bind` (@gcanti)
+    - add `bindTo` (@gcanti)
+    - relax `group` signature (@gcanti)
+    - relax `groupBy` signature (@gcanti)
+    - relax `groupSort` signature (@gcanti)
+    - relax `sort` signature (@gcanti)
+  - `Option`
+    - add `apS` (@gcanti)
+    - add `bind` (@gcanti)
+    - add `bindTo` (@gcanti)
+  - `Reader`
+    - add `apW` (@gcanti)
+    - add `apS` (@gcanti)
+    - add `apSW` (@gcanti)
+    - add `bind` (@gcanti)
+    - add `bindTo` (@gcanti)
+    - add `bindW` (@gcanti)
+  - `ReaderEither`
+    - add `apS` (@gcanti)
+    - add `apSW` (@gcanti)
+    - add `bind` (@gcanti)
+    - add `bindTo` (@gcanti)
+    - add `bindW` (@gcanti)
+    - add `chainFirstW`, #1273 (@leemhenson)
+  - `ReaderTask`
+    - add `apS` (@gcanti)
+    - add `apSW` (@gcanti)
+    - add `bind` (@gcanti)
+    - add `bindTo` (@gcanti)
+    - add `bindW` (@gcanti)
+  - `ReaderTaskEither`
+    - add `apS` (@gcanti)
+    - add `apSW` (@gcanti)
+    - add `bind` (@gcanti)
+    - add `bindTo` (@gcanti)
+    - add `bindW` (@gcanti)
+    - add `chainFirstW`, #1273 (@leemhenson)
+  - `ReadonlyArray`
+    - add `apS` (@gcanti)
+    - add `bind` (@gcanti)
+    - add `bindTo` (@gcanti)
+  - `ReadonlyNonEmptyArray`
+    - add `apS` (@gcanti)
+    - add `bind` (@gcanti)
+    - add `bindTo` (@gcanti)
+    - relax `group` signature (@gcanti)
+    - relax `groupBy` signature (@gcanti)
+    - relax `groupSort` signature (@gcanti)
+    - relax `sort` signature (@gcanti)
+  - `State`
+    - add `apS` (@gcanti)
+    - add `bind` (@gcanti)
+    - add `bindTo` (@gcanti)
+    - add `evaluate` (@gcanti)
+    - add `execute` (@gcanti)
+  - `StateReaderTaskEither`
+    - add `apS` (@gcanti)
+    - add `apSW` (@gcanti)
+    - add `bind` (@gcanti)
+    - add `bindTo` (@gcanti)
+    - add `bindW` (@gcanti)
+    - add `chainFirstW`, #1273 (@leemhenson)
+    - add `evaluate` (@gcanti)
+    - add `execute` (@gcanti)
+  - `Task`
+    - add `apS` (@gcanti)
+    - add `bind` (@gcanti)
+    - add `bindTo` (@gcanti)
+  - `TaskEither`
+    - add `apS` (@gcanti)
+    - add `apSW` (@gcanti)
+    - add `bind` (@gcanti)
+    - add `bindTo` (@gcanti)
+    - add `bindW` (@gcanti)
+    - add `chainFirstW`, #1273 (@leemhenson)
+  - `Tree`
+    - add `apS` (@gcanti)
+    - add `bind` (@gcanti)
+    - add `bindTo` (@gcanti)
+  - `Writer`
+    - add `evaluate` (@gcanti)
+    - add `execute` (@gcanti)
+- **Deprecation**
+  - `Foldable`
+    - deprecate `foldM` in favour of `reduceM` (@gcanti)
+  - `State`
+    - deprecate `evalState` in favour of `evaluate` (@gcanti)
+    - deprecate `execState` in favour of `execute` (@gcanti)
+  - `StateReaderTaskEither`
+    - deprecate `evalState` in favour of `evaluate` (@gcanti)
+    - deprecate `execState` in favour of `execute` (@gcanti)
+  - `Writer`
+    - deprecate `evalWriter` in favour of `evaluate` (@gcanti)
+    - deprecate `execWriter` in favour of `execute` (@gcanti)
+
+# 2.7.1
+
+- **Bug Fix**
+  - `ReadonlyArray`
+    - fix `FunctorWithIndex` instance name (@gcanti)
+    - fix `Functor` instance name (@gcanti)
+- **Polish**
+  - `Array`
+    - relax `sort` signature (@gcanti)
+    - relax `sortBy` signature (@gcanti)
+  - `Map`
+    - export `mapWithIndex` (@gcanti)
+  - `ReadonlyArray`
+    - relax `sort` signature (@gcanti)
+    - relax `sortBy` signature (@gcanti)
+  - `ReadonlyMap`
+    - export `mapWithIndex` (@gcanti)
+
+# 2.7.0
+
+- **Bug Fix**
+  - `These`
+    - fix `ap` implementation in `getMonad` function (@gcanti)
+- **Polish**
+  - improve performance of sequenceT and sequenceS, fix #1255 (@gcanti)
+- **New Feature**
+  - `function`
+    - add `hole` (type hole simulation) (@gcanti)
+  - `Array`
+    - add `chainWithIndex`, #1256 (@OliverJAsh)
+    - add `Functor` instance (@gcanti)
+    - add `FunctorWithIndex` instance (@gcanti)
+    - add `Applicative` instance (@gcanti)
+    - add `Monad` instance (@gcanti)
+    - add `Unfoldable` instance (@gcanti)
+    - add `Alt` instance (@gcanti)
+    - add `Alternative` instance (@gcanti)
+    - add `Extend` instance (@gcanti)
+    - add `Compactable` instance (@gcanti)
+    - add `Filterable` instance (@gcanti)
+    - add `FilterableWithIndex` instance (@gcanti)
+    - add `Foldable` instance (@gcanti)
+    - add `FoldableWithIndex` instance (@gcanti)
+    - add `Traversable` instance (@gcanti)
+    - add `TraversableWithIndex` instance (@gcanti)
+    - add `Witherable` instance (@gcanti)
+  - `Const`
+    - add `Functor` instance (@gcanti)
+    - add `Contravariant` instance (@gcanti)
+    - add `Bifunctor` instance (@gcanti)
+  - `Either`
+    - add `getApplicativeValidation` constrained instance (@gcanti)
+    - add `getAltValidation` constrained instance (@gcanti)
+    - add `Functor` instance (@gcanti)
+    - add `Applicative` instance (@gcanti)
+    - add `Monad` instance (@gcanti)
+    - add `Foldable` instance (@gcanti)
+    - add `Traversable` instance (@gcanti)
+    - add `Bifunctor` instance (@gcanti)
+    - add `Alt` instance (@gcanti)
+    - add `Extend` instance (@gcanti)
+    - add `ChainRec` instance (@gcanti)
+    - add `MonadThrow` instance (@gcanti)
+  - `Eq`
+    - add `Contravariant` instance (@gcanti)
+  - `Identity`
+    - add `Functor` instance (@gcanti)
+    - add `Applicative` instance (@gcanti)
+    - add `Monad` instance (@gcanti)
+    - add `Foldable` instance (@gcanti)
+    - add `Traversable` instance (@gcanti)
+    - add `Alt` instance (@gcanti)
+    - add `Comonad` instance (@gcanti)
+    - add `ChainRec` instance (@gcanti)
+  - `IO`
+    - add `Functor` instance (@gcanti)
+    - add `Applicative` instance (@gcanti)
+    - add `Monad` instance (@gcanti)
+    - add `MonadIO` instance (@gcanti)
+    - add `ChainRec` instance (@gcanti)
+  - `IOEither`
+    - add `getApplicativeIOValidation` constrained instance (@gcanti)
+    - add `getAltIOValidation` constrained instance (@gcanti)
+    - add `Functor` instance (@gcanti)
+    - add `Applicative` instance (@gcanti)
+    - add `Monad` instance (@gcanti)
+    - add `Bifunctor` instance (@gcanti)
+    - add `Alt` instance (@gcanti)
+    - add `MonadIO` instance (@gcanti)
+    - add `MonadThrow` instance (@gcanti)
+  - `Map`
+    - add `Functor` instance (@gcanti)
+    - add `Compactable` instance (@gcanti)
+    - add `Filterable` instance (@gcanti)
+  - `NonEmptyArray`
+    - add `Functor` instance (@gcanti)
+    - add `FunctorWithIndex` instance (@gcanti)
+    - add `Applicative` instance (@gcanti)
+    - add `Monad` instance (@gcanti)
+    - add `Foldable` instance (@gcanti)
+    - add `FoldableWithIndex` instance (@gcanti)
+    - add `Traversable` instance (@gcanti)
+    - add `TraversableWithIndex` instance (@gcanti)
+    - add `Alt` instance (@gcanti)
+    - add `Comonad` instance (@gcanti)
+  - `Option`
+    - add `Functor` instance (@gcanti)
+    - add `Applicativ` instance (@gcanti)
+    - add `Monad` instance (@gcanti)
+    - add `Foldable` instance (@gcanti)
+    - add `Alt` instance (@gcanti)
+    - add `Alternative` instance (@gcanti)
+    - add `Extend` instance (@gcanti)
+    - add `Compactable` instance (@gcanti)
+    - add `Filterable` instance (@gcanti)
+    - add `Traversable` instance (@gcanti)
+    - add `Witherable` instance (@gcanti)
+    - add `MonadThrow` instance (@gcanti)
+  - `Ord`
+    - add `ContravariantOrd` instance (@gcanti)
+  - `Reader`
+    - add `Functor` instance (@gcanti)
+    - add `Applicative` instance (@gcanti)
+    - add `Monad` instance (@gcanti)
+    - add `Profunctor` instance (@gcanti)
+    - add `Category` instance (@gcanti)
+    - add `String` instance (@gcanti)
+    - add `Choice` instance (@gcanti)
+  - `ReaderEither`
+    - add `getApplicativeReaderValidation` constrained instance (@gcanti)
+    - add `getAltReaderValidation` constrained instance (@gcanti)
+    - add `Functor` instance (@gcanti)
+    - add `Applicative` instance (@gcanti)
+    - add `Monad` instance (@gcanti)
+    - add `Bifunctor` instance (@gcanti)
+    - add `Alt` instance (@gcanti)
+    - add `MonadThrow` instance (@gcanti)
+  - `ReaderTask`
+    - add `Functor` instance (@gcanti)
+    - add `ApplicativePar` instance (@gcanti)
+    - add `ApplicativeSeq` instance (@gcanti)
+  - `ReaderTaskEither`
+    - add `getApplicativeReaderTaskValidation` constrained instance (@gcanti)
+    - add `getAltReaderTaskValidation` constrained instance (@gcanti)
+    - add `Functor` instance (@gcanti)
+    - add `ApplicativePar` instance (@gcanti)
+    - add `ApplicativeSeq` instance (@gcanti)
+    - add `Bifunctor` instance (@gcanti)
+    - add `Alt` instance (@gcanti)
+  - `ReadonlyArray`
+    - add `chainWithIndex`, #1256 (@OliverJAsh)
+    - add `Functor` instance (@gcanti)
+    - add `FunctorWithIndex` instance (@gcanti)
+    - add `Applicative` instance (@gcanti)
+    - add `Monad` instance (@gcanti)
+    - add `Unfoldable` instance (@gcanti)
+    - add `Alt` instance (@gcanti)
+    - add `Alternative` instance (@gcanti)
+    - add `Extend` instance (@gcanti)
+    - add `Compactable` instance (@gcanti)
+    - add `Filterable` instance (@gcanti)
+    - add `FilterableWithIndex` instance (@gcanti)
+    - add `Foldable` instance (@gcanti)
+    - add `FoldableWithIndex` instance (@gcanti)
+    - add `Traversable` instance (@gcanti)
+    - add `TraversableWithIndex` instance (@gcanti)
+    - add `Witherable` instance (@gcanti)
+  - `ReadonlyMap`
+    - add `Functor` instance (@gcanti)
+    - add `Compactable` instance (@gcanti)
+    - add `Filterable` instance (@gcanti)
+  - `ReadonlyNonEmptyArray`
+    - add `Functor` instance (@gcanti)
+    - add `FunctorWithIndex` instance (@gcanti)
+    - add `Applicative` instance (@gcanti)
+    - add `Monad` instance (@gcanti)
+    - add `Foldable` instance (@gcanti)
+    - add `FoldableWithIndex` instance (@gcanti)
+    - add `Traversable` instance (@gcanti)
+    - add `TraversableWithIndex` instance (@gcanti)
+    - add `Alt` instance (@gcanti)
+    - add `Comonad` instance (@gcanti)
+  - `ReadonlyRecord`
+    - add `Functor` instance (@gcanti)
+    - add `FunctorWithIndex` instance (@gcanti)
+    - add `Foldable` instance (@gcanti)
+    - add `Compactable` instance (@gcanti)
+    - add `Filterable` instance (@gcanti)
+    - add `FilterableWithIndex` instance (@gcanti)
+    - add `Traversable` instance (@gcanti)
+    - add `TraversableWithIndex` instance (@gcanti)
+    - add `Witherable` instance (@gcanti)
+  - `ReadonlyTuple`
+    - add `Functor` instance (@gcanti)
+    - add `Bifunctor` instance (@gcanti)
+    - add `Semigroupoid` instance (@gcanti)
+    - add `Comonad` instance (@gcanti)
+    - add `Foldable` instance (@gcanti)
+    - add `Traversable` instance (@gcanti)
+  - `Record`
+    - add `Functor` instance (@gcanti)
+    - add `FunctorWithIndex` instance (@gcanti)
+    - add `Foldable` instance (@gcanti)
+    - add `Compactable` instance (@gcanti)
+    - add `Filterable` instance (@gcanti)
+    - add `FilterableWithIndex` instance (@gcanti)
+    - add `Traversable` instance (@gcanti)
+    - add `TraversableWithIndex` instance (@gcanti)
+    - add `Witherable` instance (@gcanti)
+  - `State`
+    - add `Functor` instance (@gcanti)
+    - add `Applicative` instance (@gcanti)
+    - add `Monad` instance (@gcanti)
+  - `Store`
+    - add `Functor` instance (@gcanti)
+    - add `Comonad` instance (@gcanti)
+  - `StateReaderTaskEither`
+    - add `Functor` instance (@gcanti)
+    - add `Applicative` instance (@gcanti)
+    - add `Bifunctor` instance (@gcanti)
+    - add `Alt` instance (@gcanti)
+  - `Task`
+    - add `Functor` instance (@gcanti)
+    - add `ApplicativePar` instance (@gcanti)
+    - add `ApplicativeSeq` instance (@gcanti)
+  - `TaskEither`
+    - add `getApplicativeTaskValidation` constrained instance (@gcanti)
+    - add `getAltTaskValidation` constrained instance (@gcanti)
+    - add `Functor` instance (@gcanti)
+    - add `ApplicativePar` instance (@gcanti)
+    - add `ApplicativeSeq` instance (@gcanti)
+    - add `Bifunctor` instance (@gcanti)
+    - add `Alt` instance (@gcanti)
+  - `TaskThese`
+    - add `Functor` instance (@gcanti)
+    - add `Bifunctor` instance (@gcanti)
+  - `These`
+    - add `getApplicative` constrained instance (@gcanti)
+    - add `Functor` instance (@gcanti)
+    - add `Bifunctor` instance (@gcanti)
+    - add `Foldable` instance (@gcanti)
+    - add `Traversable` instance (@gcanti)
+  - `Traced`
+    - rename `traced` to `Functor` for consistency (@gcanti)
+  - `Tree`
+    - add `Functor` instance (@gcanti)
+    - add `Applicative` instance (@gcanti)
+    - add `Monad` instance (@gcanti)
+    - add `Foldable` instance (@gcanti)
+    - add `Traversable` instance (@gcanti)
+    - add `Comonad` instance (@gcanti)
+  - `Writer`
+    - add `Functor` instance (@gcanti)
+  - `Tuple`
+    - add `Functor` instance (@gcanti)
+    - add `Bifunctor` instance (@gcanti)
+    - add `Semigroupoid` instance (@gcanti)
+    - add `Comonad` instance (@gcanti)
+    - add `Foldable` instance (@gcanti)
+    - add `Traversable` instance (@gcanti)
+
+# 2.6.7
+
+- **Polish**
+  - refine `Either.parseJSON` return type, #1252 (@OliverJAsh)
+  - add missing `chainW` to `ReaderTask`, #1254 (@adameier)
+
+# 2.6.6
+
+- **Polish**
+  - `Array`
+    - export `unfold` (@gcanti)
+    - make `lookup` data-last (@gcanti)
+    - make `elem` data-last (@gcanti)
+    - make `difference` data-last (@gcanti)
+    - make `intersection` data-last (@gcanti)
+    - make `union` data-last (@gcanti)
+    - make `zip` data-last (@gcanti)
+    - make `cons` data-last (@gcanti)
+  - `Map`
+    - make `member` data-last (@gcanti)
+    - make `elem` data-last (@gcanti)
+    - make `lookup` data-last (@gcanti)
+    - make `lookupWithKey` data-last (@gcanti)
+    - make `isSubmap` data-last (@gcanti)
+  - `NonEmptyArray`
+    - make `zip` data-last (@gcanti)
+  - `ReadonlyArray`
+    - export `unfold` (@gcanti)
+    - make `lookup` data-last (@gcanti)
+    - make `elem` data-last (@gcanti)
+    - make `difference` data-last (@gcanti)
+    - make `intersection` data-last (@gcanti)
+    - make `union` data-last (@gcanti)
+    - make `zip` data-last (@gcanti)
+    - make `cons` data-last (@gcanti)
+  - `ReadonlyMap`
+    - make `member` data-last (@gcanti)
+    - make `elem` data-last (@gcanti)
+    - make `lookup` data-last (@gcanti)
+    - make `lookupWithKey` data-last (@gcanti)
+    - make `isSubmap` data-last (@gcanti)
+  - `ReadonlyNonEmptyArray`
+    - make `zip` data-last (@gcanti)
+  - `ReadonlyRecord`
+    - make `isSubrecord` data-last (@gcanti)
+    - make `lookup` data-last (@gcanti)
+    - make `elem` data-last (@gcanti)
+  - `ReadonlySet`
+    - make `isSubset` data-last (@gcanti)
+    - make `elem` data-last (@gcanti)
+    - make `union` data-last (@gcanti)
+    - make `intersection` data-last (@gcanti)
+    - make `difference` data-last (@gcanti)
+  - `Record`
+    - make `isSubrecord` data-last (@gcanti)
+    - make `lookup` data-last (@gcanti)
+    - make `elem` data-last (@gcanti)
+  - `Set`
+    - make `subset` data-last (@gcanti)
+    - make `elem` data-last (@gcanti)
+    - make `union` data-last (@gcanti)
+    - make `intersection` data-last (@gcanti)
+    - make `difference` data-last (@gcanti)
+  - `Semigroup`
+    - make `fold` data-last (@gcanti)
+
+# 2.6.5
+
+- **Polish**
+  - export a pipeable `wither` function from all modules which admit a `Witherable` instance (@gcanti)
+  - export a pipeable `wilt` function from all modules which admit a `Witherable` instance (@gcanti)
+
+# 2.6.4
+
+- **Bug Fix**
+  - `ReadonlyMap`
+    - `traverseWithIndex` should sort the keys (@gcanti)
+  - `ReadonlyRecord`
+    - `traverseWithIndex` should sort the keys (@gcanti)
+
+# 2.6.3
+
+- **Polish**
+  - change `ReadonlyNonEmptyArray` definition to get better type inference (@gcanti)
+  - move `pipe` to `function` module (@gcanti)
+  - export `sequence` from all modules which admit a `Traversable` instance (@gcanti)
+  - export a pipeable `traverse` function from all modules which admit a `Traversable` instance (@gcanti)
+  - export a pipeable `traverseWithIndex` function from all modules which admit a `TraversableWithIndex` instance (@gcanti)
+  - remove monad transformers imports from all modules (@gcanti)
+
+# 2.6.2
+
+The goal of this release is to make `fp-ts` more "tree shaking" friendly.
+
+- **Polish**
+  - add `/*@__PURE__*/` comments to pipeables (@gcanti)
+  - add `/*@__PURE__*/` comments to transformers (@gcanti)
+  - remove `pipeable.ts` module imports (@gcanti)
+
+# 2.6.1
+
+- **New Feature**
+  - add W variants, closes #904 (@gcanti)
+  - `Const`
+    - add missing instances, #1201 (@gcanti)
+  - `Date`
+    - add `eqDate`, `eqMonth`, `eqYear` (@gcanti)
+  - `Either`
+    - add `getOrElseW` (@gcanti)
+    - add `chainW` (@gcanti)
+  - `Eq`
+    - add `getMonoid` (@gcanti)
+  - `IOEither`
+    - add `getOrElseW` (@gcanti)
+    - add `chainW` (@gcanti)
+    - add `chainEitherKW` (@giogonzo)
+  - `Option`
+    - add `getOrElseW` (@gcanti)
+  - `Reader`
+    - add `chainW` (@gcanti)
+  - `ReaderEither`
+    - add `getOrElseW` (@gcanti)
+    - add `chainW` (@gcanti)
+    - add `chainEitherKW` (@giogonzo)
+  - `ReaderTaskEither`
+    - add `getOrElseW` (@gcanti)
+    - add `chainW` (@gcanti)
+    - add `chainEitherKW` (@giogonzo)
+    - add `chainTaskEitherKW` (@giogonzo)
+    - add `chainIOEitherKW` (@giogonzo)
+  - `StateReaderTaskEither`
+    - add `chainW` (@gcanti)
+    - add `chainEitherKW` (@giogonzo)
+    - add `chainTaskEitherKW` (@giogonzo)
+    - add `chainReaderTaskEitherKW` (@giogonzo)
+    - add `chainIOEitherKW` (@giogonzo)
+  - `TaskEither`
+    - add `getOrElseW` (@gcanti)
+    - add `chainW` (@gcanti)
+    - add `chainEitherKW` (@giogonzo)
+    - add `chainIOEitherKW` (@giogonzo)
+  - `Tree`
+    - add `fold` function (@gcanti)
+
+# 2.5.4
+
+- **Polish**
+  - `StateT`
+    - add missing `StateM2C` and `StateM3C` (@qlonik)
+
+# 2.5.3
+
+- **Polish**
+  - `Either`
+    - add missing instances to `getValidation` (@gcanti)
+  - `IOEither`
+    - relax `Bifunctor2C` to `Bifunctor2` in `getIOValidation` (@gcanti)
+  - `ReaderEither`
+    - relax `Bifunctor3C` to `Bifunctor3` in `getReaderValidation` (@gcanti)
+  - `ReaderTaskEither`
+    - relax `Bifunctor3C` to `Bifunctor3` in `getReaderTaskValidation` (@gcanti)
+  - `TaskEither`
+    - relax `Bifunctor2C` to `Bifunctor2` in `getTaskValidation` (@gcanti)
+
+# 2.5.1
+
+- **New Feature**
+  - `Eq`
+    - add `eqStrict`, closes #965 (@gcanti)
+  - `NonEmptyArray`
+    - add `fold` (@vicrac)
+    - add `zip`, `zipWith` and `unzip`, closes #1109 (@gcanti)
+  - `Semigroup`
+    - add `getIntercalateSemigroup` (@gcanti)
+  - `Set`
+    - add `toggle` (@ryota-ka)
+  - `TaskEither`
+    - add `tryCatchK` (@DenisFrezzato)
+  - `These`
+    - add missing `MonadThrow` instance (@gcanti)
+  - `ReaderTaskEither`
+    - add missing `leftReaderTask`, `rightReaderTask` functions (@gcanti)
+  - `StateReaderTaskEither`
+    - add missing `Bifunctor`, `Alt` instances (@gcanti)
 - **Experimental**
-  - add `EitherT`, fix #36 (@gcanti)
-  - add `OptionT`, fix #37 (@gcanti)
-  - add `ReaderT`, fix #38 (@gcanti)
-  - add `Trans` typeclass (`liftT`), fix #40 (@gcanti)
-  - add `Free`, fix #42 (@gcanti)
+  - add `ReadonlyArray` module (@gcanti)
+  - add `ReadonlyNonEmptyArray` module (@gcanti)
+  - add `ReadonlySet` module (@gcanti)
+  - add `ReadonlyMap` module (@gcanti)
+  - add `ReadonlyRecord` module (@gcanti)
+  - add `ReadonlyTuple` module (@gcanti)
 
-# 0.2.4
+# 2.4.4
 
 - **Polish**
-  - deprecate `validation.getApplicativeS` / `validation.getStaticApplicative` (@gcanti)
+  - add missing `MonadIO4` (@mlegenhausen)
+  - add missing `MonadTask4` (@mlegenhausen)
+  - `StateReaderTaskEither`
+    - add missing `MonadTask4` instance (@mlegenhausen)
+    - add missing `filterOrElse`, `fromPredicate` combinators (@mlegenhausen)
 
-# 0.2.3
-
-- **Bug Fix**
-  - fix return types of `validation.success` / `validation.failure` (@gcanti)
-
-# 0.2.2
-
-- **Bug Fix**
-  - fix `Some.reduce` so it calls `f`, https://github.com/gcanti/fp-ts/pull/45 (@leemhenson)
-
-# 0.2.1
-
-- **New Feature**
-  - `Semigroupoid` type class (@gcanti)
-  - `Rxjs` module (@gcanti)
-  - `Tuple` module (@gcanti)
-  - `Dictionary` module (@gcanti)
-  - add phantom types to all data structures in order to allow type extraction (@gcanti)
-  - add all exports for rollup (@gcanti)
-
-# 0.2
-
-- **Breaking Change**
-  - complete refactoring: new technique to get higher kinded types and typeclasses
-
-# 0.1.1
-
-- **New Feature**
-  - add support for fantasy-land
-- **Breaking Change**
-  - complete refactoring
-  - remove `data` module
-  - remove `newtype` module
-
-# 0.0.4
+# 2.4.3
 
 - **Bug Fix**
-  - fix `compose` definition for 5 or more functions (@bumbleblym)
+  - don't set `target: es6` in `tsconfig.build-es6.json`, fix #1110 (@gcanti)
 
-# 0.0.3
+# 2.4.2
 
-- **New Feature**
-  - make Array<T> a HKT and deprecate `to`,`from` helper functions, fix #5 (@gcanti)
-  - add `Traced` comonad (@bumbleblym)
-  - add `getOrElse` method to `Option` (@gcanti)
-  - add NonEmptyArray, fix #12 (@gcanti)
+- **Bug Fix**
+  - fix `Invariant` definition (@gcanti)
+
+# 2.4.1
+
 - **Polish**
-  - add tslint
+  - `NonEmptyArray`
+    - add overloading to `group` managing non empty arrays, closes #831 (@gcanti)
+    - `foldMap` and `foldMapWithIndex` now require a `Semigroup` instead of a `Monoid` (@gcanti)
+
+# 2.4.0
+
+- **New Feature**
+  - add `WriterT` module, closes #1050 (@gcanti)
+  - add `TheseT` module (@gcanti)
+  - add `TaskThese` module (@gcanti)
+  - `function`
+    - add `tupled`, `untupled` functions, closes #1062 (@gcanti)
+  - `IOEither`
+    - add `fromEitherK`, `chainEitherK` (@gcanti)
+  - `ReaderEither`
+    - add `fromEitherK`, `chainEitherK` (@gcanti)
+  - `ReaderTask`
+    - add `run` (@gcanti)
+    - add `fromIOK`, `chainIOK`, `fromTaskK`, `chainTaskK` (@gcanti)
+  - `ReaderTaskEither`
+    - add `fromEitherK`, `chainEitherK`, `fromIOEitherK`, `chainIOEitherK`, `fromTaskEitherK`, `chainTaskEitherK` (@gcanti)
+  - `These`
+    - add `swap` (@gcanti)
+  - `Ord`
+    - add `getMonoid` (@vicrac)
+  - `Ordering`
+    - add `monoidOrdering` (@gcanti)
+  - `StateReaderTaskEither`
+    - add `fromEitherK`, `chainEitherK`, `fromIOEitherK`, `chainIOEitherK`, `fromTaskEitherK`, `chainTaskEitherK`, `fromReaderTaskEitherK`, `chainReaderTaskEitherK` (@gcanti)
+  - `Task`
+    - add `fromIOK`, `chainIOK` (@gcanti)
+  - `TaskEither`
+    - add `fromEitherK`, `chainEitherK`, `fromIOEitherK`, `chainIOEitherK` (@gcanti)
+- **Deprecation**
+  - `Ord`
+    - deprecate `getSemigroup` in favor of `getMonoid` (@gcanti)
+  - `Ordering`
+    - deprecate `semigroupOrdering` in favor of `monoidOrdering` (@gcanti)
+- **Internal**
+  - use native `Promise.race` in `Task.getRaceMonoid` (@gcanti)
+
+# 2.3.1
+
 - **Bug Fix**
-  - fix `State` definition (@gcanti)
+  - `Array.ts`
+    - fix `sortBy` failing on empty list of ords, #1046 (@vicrac)
 
-# 0.0.2
+# 2.3.0
+
+- **New Feature**
+  - add `ReaderTask` module (@sledorze)
+  - `ReaderTaskEither`
+    - add `getReaderTaskValidation` (@sledorze)
+  - `ReaderEither`
+    - add `getReaderValidation` (@gcanti)
+  - `TaskEither`
+    - improve `getTaskValidation` (@gcanti)
+  - `IOEither`
+    - improve `getIOValidation` (@gcanti)
+
+# 2.2.0
+
+- **New Feature**
+  - add `boolean` module, closes #930 (@giogonzo)
+  - add `ChainRec` instance to `IO` (@gcanti)
+  - `NonEmptyArray`
+    - add `init` (@steida)
+    - add `Alt` instance (@gcanti)
+- **Internal**
+  - add new 3C variants and related overloads (@sledorze)
+
+# 2.1.2
 
 - **Bug Fix**
-  - fix `ChainRec` definition (@gcanti)
+  - `fromNullable` now uses `NonNullable` in its return type, fixes #1004 (@gcanti)
 
-# 0.0.1
+# 2.1.1
 
-Initial release
+- **Bug Fix**
+  - add `sequenceT` and `sequenceS` overload signatures for `Kind4`, fixes #969 (@pfgray)
+
+# 2.1.0
+
+- **New Feature**
+  - add constrained `Filterable` instance to `IOEither`, `TaskEither`, #959 (@giogonzo)
+
+# 2.0.5
+
+- **Bug Fix**
+  - fix `PipeableApply2C` definition (@gcanti)
+
+# 2.0.4
+
+- **Polish**
+  - `ReaderTaskEither`
+    - add missing `bracket` function (@mlegenhausen)
+
+# 2.0.3
+
+- **Bug Fix**
+  - fix `sequenceT`, `sequenceS` implementations, closes #914 (@gcanti)
+
+# 2.0.2
+
+- **Bug Fix**
+  - add `reduce` to `FoldableComposition2C1` (@anilanar)
+
+# 2.0.1
+
+- **Bug Fix**
+  - fix `PipeableBifunctor` definition (@gcanti)
+  - fix `chunksOf` implementation, #897 (@gcanti)
+
+# 2.0.0
+
+- **Breaking Change**
+  - remove deprecated APIs (@gcanti)
+  - remove classes (@gcanti)
+  - remove all phantom fields (@gcanti)

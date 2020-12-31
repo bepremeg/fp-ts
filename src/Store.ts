@@ -1,106 +1,172 @@
+/**
+ * @since 2.0.0
+ */
 import { Comonad2 } from './Comonad'
-import { Functor, Functor2, Functor3 } from './Functor'
-import { HKT, HKT2, HKT3, Type, Type2, Type3, URIS, URIS2, URIS3 } from './HKT'
-import { Endomorphism, toString } from './function'
+import { Endomorphism, identity, pipe } from './function'
+import { Functor as FunctorHKT, Functor1, Functor2, Functor2C, Functor3, Functor3C } from './Functor'
+import { HKT, Kind, Kind2, Kind3, URIS, URIS2, URIS3 } from './HKT'
+import { Extend2 } from './Extend'
 
-declare module './HKT' {
-  interface URI2HKT2<L, A> {
-    Store: Store<L, A>
-  }
-}
-
-export const URI = 'Store'
-
-export type URI = typeof URI
+// -------------------------------------------------------------------------------------
+// model
+// -------------------------------------------------------------------------------------
 
 /**
- * @data
- * @constructor Store
- * @since 1.0.0
+ * @category model
+ * @since 2.0.0
  */
-export class Store<S, A> {
-  readonly _A!: A
-  readonly _L!: S
-  readonly _URI!: URI
-  constructor(readonly peek: (s: S) => A, readonly pos: S) {}
-  /** Reposition the focus at the specified position */
-  seek(s: S): Store<S, A> {
-    return new Store(this.peek, s)
-  }
-  map<B>(f: (a: A) => B): Store<S, B> {
-    return new Store(s => f(this.peek(s)), this.pos)
-  }
-  extract(): A {
-    return this.peek(this.pos)
-  }
-  extend<B>(f: (sa: Store<S, A>) => B): Store<S, B> {
-    return new Store(s => f(this.seek(s)), this.pos)
-  }
-  inspect(): string {
-    return this.toString()
-  }
-  toString(): string {
-    return `new Store(${toString(this.peek)}, ${toString(this.pos)})`
-  }
-}
-
-const map = <S, A, B>(sa: Store<S, A>, f: (a: A) => B): Store<S, B> => {
-  return sa.map(f)
-}
-
-const extract = <S, A>(sa: Store<S, A>): A => {
-  return sa.extract()
-}
-
-const extend = <S, A, B>(sa: Store<S, A>, f: (sa: Store<S, A>) => B): Store<S, B> => {
-  return sa.extend(f)
+export interface Store<S, A> {
+  readonly peek: (s: S) => A
+  readonly pos: S
 }
 
 /**
- * Extract a value from a position which depends on the current position
- * @function
- * @since 1.0.0
+ * Reposition the focus at the specified position
+ *
+ * @since 2.0.0
  */
-export const peeks = <S>(f: Endomorphism<S>) => <A>(sa: Store<S, A>) => (s: S): A => {
-  return sa.peek(f(sa.pos))
+export function seek<S>(s: S): <A>(wa: Store<S, A>) => Store<S, A> {
+  return (wa) => ({ peek: wa.peek, pos: s })
 }
 
 /**
  * Reposition the focus at the specified position, which depends on the current position
- * @function
- * @since 1.0.0
+ *
+ * @since 2.0.0
  */
-export const seeks = <S>(f: Endomorphism<S>) => <A>(sa: Store<S, A>): Store<S, A> => {
-  return new Store(sa.peek, f(sa.pos))
+export function seeks<S>(f: Endomorphism<S>): <A>(wa: Store<S, A>) => Store<S, A> {
+  return (wa) => ({ peek: wa.peek, pos: f(wa.pos) })
 }
 
-/** Extract a collection of values from positions which depend on the current position */
-export function experiment<F extends URIS3>(
-  F: Functor3<F>
-): <U, L, S>(f: (s: S) => HKT3<F, U, L, S>) => <A>(sa: Store<S, A>) => Type3<F, U, L, A>
-export function experiment<F extends URIS2>(
-  F: Functor2<F>
-): <L, S>(f: (s: S) => HKT2<F, L, S>) => <A>(sa: Store<S, A>) => Type2<F, L, A>
-export function experiment<F extends URIS>(
-  F: Functor<F>
-): <S>(f: (s: S) => HKT<F, S>) => <A>(sa: Store<S, A>) => Type<F, A>
-export function experiment<F>(F: Functor<F>): <S>(f: (s: S) => HKT<F, S>) => <A>(sa: Store<S, A>) => HKT<F, A>
+/**
+ * Extract a value from a position which depends on the current position
+ *
+ * @since 2.0.0
+ */
+export function peeks<S>(f: Endomorphism<S>): <A>(wa: Store<S, A>) => A {
+  return (wa) => wa.peek(f(wa.pos))
+}
+
 /**
  * Extract a collection of values from positions which depend on the current position
- * @function
- * @since 1.0.0
+ *
+ * @since 2.0.0
  */
-export function experiment<F>(F: Functor<F>): <S>(f: (s: S) => HKT<F, S>) => <A>(sa: Store<S, A>) => HKT<F, A> {
-  return f => sa => F.map(f(sa.pos), s => sa.peek(s))
+export function experiment<F extends URIS3>(
+  F: Functor3<F>
+): <R, E, S>(f: (s: S) => Kind3<F, R, E, S>) => <A>(wa: Store<S, A>) => Kind3<F, R, E, A>
+export function experiment<F extends URIS3, E>(
+  F: Functor3C<F, E>
+): <R, S>(f: (s: S) => Kind3<F, R, E, S>) => <A>(wa: Store<S, A>) => Kind3<F, R, E, A>
+export function experiment<F extends URIS2>(
+  F: Functor2<F>
+): <E, S>(f: (s: S) => Kind2<F, E, S>) => <A>(wa: Store<S, A>) => Kind2<F, E, A>
+export function experiment<F extends URIS2, E>(
+  F: Functor2C<F, E>
+): <S>(f: (s: S) => Kind2<F, E, S>) => <A>(wa: Store<S, A>) => Kind2<F, E, A>
+export function experiment<F extends URIS>(
+  F: Functor1<F>
+): <S>(f: (s: S) => Kind<F, S>) => <A>(wa: Store<S, A>) => Kind<F, A>
+export function experiment<F>(F: FunctorHKT<F>): <S>(f: (s: S) => HKT<F, S>) => <A>(wa: Store<S, A>) => HKT<F, A>
+export function experiment<F>(F: FunctorHKT<F>): <S>(f: (s: S) => HKT<F, S>) => <A>(wa: Store<S, A>) => HKT<F, A> {
+  return (f) => (wa) => F.map(f(wa.pos), (s) => wa.peek(s))
+}
+
+// -------------------------------------------------------------------------------------
+// non-pipeables
+// -------------------------------------------------------------------------------------
+
+/* istanbul ignore next */
+const map_: Functor2<URI>['map'] = (fa, f) => pipe(fa, map(f))
+/* istanbul ignore next */
+const extend_: Extend2<URI>['extend'] = (wa, f) => pipe(wa, extend(f))
+
+// -------------------------------------------------------------------------------------
+// pipeables
+// -------------------------------------------------------------------------------------
+
+/**
+ * @category Extend
+ * @since 2.0.0
+ */
+export const extend: <E, A, B>(f: (wa: Store<E, A>) => B) => (wa: Store<E, A>) => Store<E, B> = (f) => (wa) => ({
+  peek: (s) => f({ peek: wa.peek, pos: s }),
+  pos: wa.pos
+})
+
+/**
+ * @category Extract
+ * @since 2.6.2
+ */
+export const extract: <E, A>(wa: Store<E, A>) => A = (wa) => wa.peek(wa.pos)
+
+/**
+ * Derivable from `Extend`.
+ *
+ * @category combinators
+ * @since 2.0.0
+ */
+export const duplicate: <E, A>(wa: Store<E, A>) => Store<E, Store<E, A>> =
+  /*#__PURE__*/
+  extend(identity)
+
+/**
+ * `map` can be used to turn functions `(a: A) => B` into functions `(fa: F<A>) => F<B>` whose argument and return types
+ * use the type constructor `F` to represent some computational context.
+ *
+ * @category Functor
+ * @since 2.0.0
+ */
+export const map: <A, B>(f: (a: A) => B) => <E>(fa: Store<E, A>) => Store<E, B> = (f) => (fa) => ({
+  peek: (s) => f(fa.peek(s)),
+  pos: fa.pos
+})
+
+// -------------------------------------------------------------------------------------
+// instances
+// -------------------------------------------------------------------------------------
+
+/**
+ * @category instances
+ * @since 2.0.0
+ */
+export const URI = 'Store'
+
+/**
+ * @category instances
+ * @since 2.0.0
+ */
+export type URI = typeof URI
+
+declare module './HKT' {
+  interface URItoKind2<E, A> {
+    readonly [URI]: Store<E, A>
+  }
 }
 
 /**
- * @instance
- * @since 1.0.0
+ * @category instances
+ * @since 2.7.0
  */
-export const store: Comonad2<URI> = {
+export const Functor: Functor2<URI> = {
   URI,
-  map,
-  extract,
-  extend
+  map: map_
 }
+
+/**
+ * @category instances
+ * @since 2.7.0
+ */
+export const Comonad: Comonad2<URI> = {
+  URI,
+  map: map_,
+  extend: extend_,
+  extract
+}
+
+// TODO: remove in v3
+/**
+ * @category instances
+ * @since 2.0.0
+ */
+export const store: Comonad2<URI> = Comonad

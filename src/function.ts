@@ -1,228 +1,349 @@
-import { HKT } from './HKT'
+/**
+ * @since 2.0.0
+ */
 
 /**
- * @function
- * @since 1.0.0
+ * A *thunk*
+ *
+ * @since 2.0.0
  */
-export const identity = <A>(a: A): A => {
+export interface Lazy<A> {
+  (): A
+}
+
+/**
+ * @since 2.0.0
+ */
+export interface Predicate<A> {
+  (a: A): boolean
+}
+
+/**
+ * @since 2.0.0
+ */
+export interface Refinement<A, B extends A> {
+  (a: A): a is B
+}
+
+/**
+ * @since 2.0.0
+ */
+export interface Endomorphism<A> {
+  (a: A): A
+}
+
+/**
+ * @example
+ * import { FunctionN } from 'fp-ts/function'
+ *
+ * export const sum: FunctionN<[number, number], number> = (a, b) => a + b
+ *
+ * @since 2.0.0
+ */
+export interface FunctionN<A extends ReadonlyArray<unknown>, B> {
+  (...args: A): B
+}
+
+/**
+ * @since 2.0.0
+ */
+export function identity<A>(a: A): A {
   return a
 }
 
 /**
- * @constant
- * @since 1.0.0
+ * @since 2.0.0
  */
 export const unsafeCoerce: <A, B>(a: A) => B = identity as any
 
 /**
- * Thunk type
+ * @since 2.0.0
  */
-export type Lazy<A> = () => A
-
-export type Function1<A, B> = (a: A) => B
-export type Function2<A, B, C> = (a: A, b: B) => C
-export type Function3<A, B, C, D> = (a: A, b: B, c: C) => D
-export type Function4<A, B, C, D, E> = (a: A, b: B, c: C, d: D) => E
-export type Function5<A, B, C, D, E, F> = (a: A, b: B, c: C, d: D, e: E) => F
-export type Function6<A, B, C, D, E, F, G> = (a: A, b: B, c: C, d: D, e: E, f: F) => G
-export type Function7<A, B, C, D, E, F, G, H> = (a: A, b: B, c: C, d: D, e: E, f: F, g: G) => H
-export type Function8<A, B, C, D, E, F, G, H, I> = (a: A, b: B, c: C, d: D, e: E, f: F, g: G, h: H) => I
-export type Function9<A, B, C, D, E, F, G, H, I, J> = (a: A, b: B, c: C, d: D, e: E, f: F, g: G, h: H, i: I) => J
-
-export type Curried2<A, B, C> = (a: A) => (b: B) => C
-export type Curried3<A, B, C, D> = (a: A) => (b: B) => (c: C) => D
-export type Curried4<A, B, C, D, E> = (a: A) => (b: B) => (c: C) => (d: D) => E
-export type Curried5<A, B, C, D, E, F> = (a: A) => (b: B) => (c: C) => (d: D) => (e: E) => F
-export type Curried6<A, B, C, D, E, F, G> = (a: A) => (b: B) => (c: C) => (d: D) => (e: E) => (f: F) => G
-export type Curried7<A, B, C, D, E, F, G, H> = (a: A) => (b: B) => (c: C) => (d: D) => (e: E) => (f: F) => (g: G) => H
-export type Curried8<A, B, C, D, E, F, G, H, I> = (
-  a: A
-) => (b: B) => (c: C) => (d: D) => (e: E) => (f: F) => (g: G) => (h: H) => I
-export type Curried9<A, B, C, D, E, F, G, H, I, J> = (
-  a: A
-) => (b: B) => (c: C) => (d: D) => (e: E) => (f: F) => (g: G) => (h: H) => (i: I) => J
-
-export type Predicate<A> = (a: A) => boolean
-
-export type Refinement<A, B extends A> = (a: A) => a is B
-
-/**
- * @function
- * @since 1.0.0
- */
-export const not = <A>(predicate: Predicate<A>): Predicate<A> => {
-  return a => !predicate(a)
-}
-
-export function or<A, B1 extends A, B2 extends A>(p1: Refinement<A, B1>, p2: Refinement<A, B2>): Refinement<A, B1 | B2>
-export function or<A>(p1: Predicate<A>, p2: Predicate<A>): Predicate<A>
-/**
- * @function
- * @since 1.0.0
- */
-export function or<A>(p1: Predicate<A>, p2: Predicate<A>): Predicate<A> {
-  return a => p1(a) || p2(a)
+export function not<A>(predicate: Predicate<A>): Predicate<A> {
+  return (a) => !predicate(a)
 }
 
 /**
- * @function
- * @since 1.0.0
+ * @since 2.0.0
  */
-export const and = <A>(p1: Predicate<A>, p2: Predicate<A>): Predicate<A> => {
-  return a => p1(a) && p2(a)
-}
-
-export type Endomorphism<A> = (a: A) => A
-
-export type BinaryOperation<A, B> = (a1: A, a2: A) => B
-
-export type Kleisli<F, A, B> = (a: A) => HKT<F, B>
-export type Cokleisli<F, A, B> = (fa: HKT<F, A>) => B
-
-/**
- * @function
- * @since 1.0.0
- */
-export const constant = <A>(a: A): Lazy<A> => {
+export function constant<A>(a: A): Lazy<A> {
   return () => a
 }
 
 /**
- * A thunk that returns always `true`
- * @function
- * @since 1.0.0
+ * A thunk that returns always `true`.
+ *
+ * @since 2.0.0
  */
-export const constTrue = (): boolean => {
-  return true
+export const constTrue: Lazy<boolean> =
+  /*#__PURE__*/
+  constant(true)
+
+/**
+ * A thunk that returns always `false`.
+ *
+ * @since 2.0.0
+ */
+export const constFalse: Lazy<boolean> =
+  /*#__PURE__*/
+  constant(false)
+
+/**
+ * A thunk that returns always `null`.
+ *
+ * @since 2.0.0
+ */
+export const constNull: Lazy<null> =
+  /*#__PURE__*/
+  constant(null)
+
+/**
+ * A thunk that returns always `undefined`.
+ *
+ * @since 2.0.0
+ */
+export const constUndefined: Lazy<undefined> =
+  /*#__PURE__*/
+  constant(undefined)
+
+/**
+ * A thunk that returns always `void`.
+ *
+ * @since 2.0.0
+ */
+export const constVoid: Lazy<void> = constUndefined
+
+// TODO: remove in v3
+/**
+ * Flips the order of the arguments of a function of two arguments.
+ *
+ * @since 2.0.0
+ */
+export function flip<A, B, C>(f: (a: A, b: B) => C): (b: B, a: A) => C {
+  return (b, a) => f(a, b)
 }
 
 /**
- * A thunk that returns always `false`
- * @function
- * @since 1.0.0
+ * Performs left-to-right function composition. The first argument may have any arity, the remaining arguments must be unary.
+ *
+ * See also [`pipe`](#pipe).
+ *
+ * @example
+ * import { flow } from 'fp-ts/function'
+ *
+ * const len = (s: string): number => s.length
+ * const double = (n: number): number => n * 2
+ *
+ * const f = flow(len, double)
+ *
+ * assert.strictEqual(f('aaa'), 6)
+ *
+ * @since 2.0.0
  */
-export const constFalse = (): boolean => {
-  return false
-}
-
-/**
- * A thunk that returns always `null`
- * @function
- * @since 1.0.0
- */
-export const constNull = (): null => {
-  return null
-}
-
-/**
- * A thunk that returns always `undefined`
- * @function
- * @since 1.0.0
- */
-export const constUndefined = (): undefined => {
+export function flow<A extends ReadonlyArray<unknown>, B>(ab: (...a: A) => B): (...a: A) => B
+export function flow<A extends ReadonlyArray<unknown>, B, C>(ab: (...a: A) => B, bc: (b: B) => C): (...a: A) => C
+export function flow<A extends ReadonlyArray<unknown>, B, C, D>(
+  ab: (...a: A) => B,
+  bc: (b: B) => C,
+  cd: (c: C) => D
+): (...a: A) => D
+export function flow<A extends ReadonlyArray<unknown>, B, C, D, E>(
+  ab: (...a: A) => B,
+  bc: (b: B) => C,
+  cd: (c: C) => D,
+  de: (d: D) => E
+): (...a: A) => E
+export function flow<A extends ReadonlyArray<unknown>, B, C, D, E, F>(
+  ab: (...a: A) => B,
+  bc: (b: B) => C,
+  cd: (c: C) => D,
+  de: (d: D) => E,
+  ef: (e: E) => F
+): (...a: A) => F
+export function flow<A extends ReadonlyArray<unknown>, B, C, D, E, F, G>(
+  ab: (...a: A) => B,
+  bc: (b: B) => C,
+  cd: (c: C) => D,
+  de: (d: D) => E,
+  ef: (e: E) => F,
+  fg: (f: F) => G
+): (...a: A) => G
+export function flow<A extends ReadonlyArray<unknown>, B, C, D, E, F, G, H>(
+  ab: (...a: A) => B,
+  bc: (b: B) => C,
+  cd: (c: C) => D,
+  de: (d: D) => E,
+  ef: (e: E) => F,
+  fg: (f: F) => G,
+  gh: (g: G) => H
+): (...a: A) => H
+export function flow<A extends ReadonlyArray<unknown>, B, C, D, E, F, G, H, I>(
+  ab: (...a: A) => B,
+  bc: (b: B) => C,
+  cd: (c: C) => D,
+  de: (d: D) => E,
+  ef: (e: E) => F,
+  fg: (f: F) => G,
+  gh: (g: G) => H,
+  hi: (h: H) => I
+): (...a: A) => I
+export function flow<A extends ReadonlyArray<unknown>, B, C, D, E, F, G, H, I, J>(
+  ab: (...a: A) => B,
+  bc: (b: B) => C,
+  cd: (c: C) => D,
+  de: (d: D) => E,
+  ef: (e: E) => F,
+  fg: (f: F) => G,
+  gh: (g: G) => H,
+  hi: (h: H) => I,
+  ij: (i: I) => J
+): (...a: A) => J
+export function flow(
+  ab: Function,
+  bc?: Function,
+  cd?: Function,
+  de?: Function,
+  ef?: Function,
+  fg?: Function,
+  gh?: Function,
+  hi?: Function,
+  ij?: Function
+): unknown {
+  switch (arguments.length) {
+    case 1:
+      return ab
+    case 2:
+      return function (this: unknown) {
+        return bc!(ab.apply(this, arguments))
+      }
+    case 3:
+      return function (this: unknown) {
+        return cd!(bc!(ab.apply(this, arguments)))
+      }
+    case 4:
+      return function (this: unknown) {
+        return de!(cd!(bc!(ab.apply(this, arguments))))
+      }
+    case 5:
+      return function (this: unknown) {
+        return ef!(de!(cd!(bc!(ab.apply(this, arguments)))))
+      }
+    case 6:
+      return function (this: unknown) {
+        return fg!(ef!(de!(cd!(bc!(ab.apply(this, arguments))))))
+      }
+    case 7:
+      return function (this: unknown) {
+        return gh!(fg!(ef!(de!(cd!(bc!(ab.apply(this, arguments)))))))
+      }
+    case 8:
+      return function (this: unknown) {
+        return hi!(gh!(fg!(ef!(de!(cd!(bc!(ab.apply(this, arguments))))))))
+      }
+    case 9:
+      return function (this: unknown) {
+        return ij!(hi!(gh!(fg!(ef!(de!(cd!(bc!(ab.apply(this, arguments)))))))))
+      }
+  }
   return
 }
 
 /**
- * Flips the order of the arguments to a function of two arguments.
- * @function
- * @since 1.0.0
+ * @since 2.0.0
  */
-export const flip = <A, B, C>(f: Curried2<A, B, C>): Curried2<B, A, C> => {
-  return b => a => f(a)(b)
+export function tuple<T extends ReadonlyArray<any>>(...t: T): T {
+  return t
 }
 
 /**
- * The `on` function is used to change the domain of a binary operator.
- * @function
- * @since 1.0.0
+ * @since 2.0.0
  */
-export const on = <B, C>(op: BinaryOperation<B, C>) => <A>(f: (a: A) => B): BinaryOperation<A, C> => {
-  return (x, y) => op(f(x), f(y))
+export function increment(n: number): number {
+  return n + 1
 }
 
-export function compose<A, B, C>(bc: (b: B) => C, ab: (a: A) => B): (a: A) => C
-export function compose<A, B, C, D>(cd: (c: C) => D, bc: (b: B) => C, ab: (a: A) => B): (a: A) => D
-export function compose<A, B, C, D, E>(de: (d: D) => E, cd: (c: C) => D, bc: (b: B) => C, ab: (a: A) => B): (a: A) => E
-export function compose<A, B, C, D, E, F>(
-  ef: (e: E) => F,
-  de: (d: D) => E,
-  cd: (c: C) => D,
-  bc: (b: B) => C,
-  ab: (a: A) => B
-): (a: A) => F
-export function compose<A, B, C, D, E, F, G>(
-  fg: (f: F) => G,
-  ef: (e: E) => F,
-  de: (d: D) => E,
-  cd: (c: C) => D,
-  bc: (b: B) => C,
-  ab: (a: A) => B
-): (a: A) => G
-export function compose<A, B, C, D, E, F, G, H>(
-  gh: (g: G) => H,
-  fg: (f: F) => G,
-  ef: (e: E) => F,
-  de: (d: D) => E,
-  cd: (c: C) => D,
-  bc: (b: B) => C,
-  ab: (a: A) => B
-): (a: A) => H
-export function compose<A, B, C, D, E, F, G, H, I>(
-  hi: (h: H) => I,
-  gh: (g: G) => H,
-  fg: (f: F) => G,
-  ef: (e: E) => F,
-  de: (d: D) => E,
-  cd: (c: C) => D,
-  bc: (b: B) => C,
-  ab: (a: A) => B
-): (a: A) => I
-export function compose<A, B, C, D, E, F, G, H, I, J>(
-  ij: (i: I) => J,
-  hi: (h: H) => I,
-  gh: (g: G) => H,
-  fg: (f: F) => G,
-  ef: (e: E) => F,
-  de: (d: D) => E,
-  cd: (c: C) => D,
-  bc: (b: B) => C,
-  ab: (a: A) => B
-): (a: A) => J
 /**
- * @function
- * @since 1.0.0
+ * @since 2.0.0
  */
-export function compose(...fns: Array<Function>): Function {
-  const len = fns.length - 1
-  return function(this: any, x: any) {
-    let y = x
-    for (let i = len; i > -1; i--) {
-      y = fns[i].call(this, y)
-    }
-    return y
-  }
+export function decrement(n: number): number {
+  return n - 1
 }
 
-export function pipe<A, B, C>(ab: (a: A) => B, bc: (b: B) => C): (a: A) => C
-export function pipe<A, B, C, D>(ab: (a: A) => B, bc: (b: B) => C, cd: (c: C) => D): (a: A) => D
-export function pipe<A, B, C, D, E>(ab: (a: A) => B, bc: (b: B) => C, cd: (c: C) => D, de: (d: D) => E): (a: A) => E
+/**
+ * @since 2.0.0
+ */
+export function absurd<A>(_: never): A {
+  throw new Error('Called `absurd` function which should be uncallable')
+}
+
+/**
+ * Creates a tupled version of this function: instead of `n` arguments, it accepts a single tuple argument.
+ *
+ * @example
+ * import { tupled } from 'fp-ts/function'
+ *
+ * const add = tupled((x: number, y: number): number => x + y)
+ *
+ * assert.strictEqual(add([1, 2]), 3)
+ *
+ * @since 2.4.0
+ */
+export function tupled<A extends ReadonlyArray<unknown>, B>(f: (...a: A) => B): (a: A) => B {
+  return (a) => f(...a)
+}
+
+/**
+ * Inverse function of `tupled`
+ *
+ * @since 2.4.0
+ */
+export function untupled<A extends ReadonlyArray<unknown>, B>(f: (a: A) => B): (...a: A) => B {
+  return (...a) => f(a)
+}
+
+/**
+ * Pipes the value of an expression into a pipeline of functions.
+ *
+ * See also [`flow`](#flow).
+ *
+ * @example
+ * import { pipe } from 'fp-ts/function'
+ *
+ * const len = (s: string): number => s.length
+ * const double = (n: number): number => n * 2
+ *
+ * // without pipe
+ * assert.strictEqual(double(len('aaa')), 6)
+ *
+ * // with pipe
+ * assert.strictEqual(pipe('aaa', len, double), 6)
+ *
+ * @since 2.6.3
+ */
+export function pipe<A>(a: A): A
+export function pipe<A, B>(a: A, ab: (a: A) => B): B
+export function pipe<A, B, C>(a: A, ab: (a: A) => B, bc: (b: B) => C): C
+export function pipe<A, B, C, D>(a: A, ab: (a: A) => B, bc: (b: B) => C, cd: (c: C) => D): D
+export function pipe<A, B, C, D, E>(a: A, ab: (a: A) => B, bc: (b: B) => C, cd: (c: C) => D, de: (d: D) => E): E
 export function pipe<A, B, C, D, E, F>(
+  a: A,
   ab: (a: A) => B,
   bc: (b: B) => C,
   cd: (c: C) => D,
   de: (d: D) => E,
   ef: (e: E) => F
-): (a: A) => F
+): F
 export function pipe<A, B, C, D, E, F, G>(
+  a: A,
   ab: (a: A) => B,
   bc: (b: B) => C,
   cd: (c: C) => D,
   de: (d: D) => E,
   ef: (e: E) => F,
   fg: (f: F) => G
-): (a: A) => G
+): G
 export function pipe<A, B, C, D, E, F, G, H>(
+  a: A,
   ab: (a: A) => B,
   bc: (b: B) => C,
   cd: (c: C) => D,
@@ -230,8 +351,9 @@ export function pipe<A, B, C, D, E, F, G, H>(
   ef: (e: E) => F,
   fg: (f: F) => G,
   gh: (g: G) => H
-): (a: A) => H
+): H
 export function pipe<A, B, C, D, E, F, G, H, I>(
+  a: A,
   ab: (a: A) => B,
   bc: (b: B) => C,
   cd: (c: C) => D,
@@ -240,8 +362,9 @@ export function pipe<A, B, C, D, E, F, G, H, I>(
   fg: (f: F) => G,
   gh: (g: G) => H,
   hi: (h: H) => I
-): (a: A) => I
+): I
 export function pipe<A, B, C, D, E, F, G, H, I, J>(
+  a: A,
   ab: (a: A) => B,
   bc: (b: B) => C,
   cd: (c: C) => D,
@@ -251,158 +374,271 @@ export function pipe<A, B, C, D, E, F, G, H, I, J>(
   gh: (g: G) => H,
   hi: (h: H) => I,
   ij: (i: I) => J
-): (a: A) => J
-/**
- * @function
- * @since 1.0.0
- */
-export function pipe(...fns: Array<Function>): Function {
-  const len = fns.length - 1
-  return function(this: any, x: any) {
-    let y = x
-    for (let i = 0; i <= len; i++) {
-      y = fns[i].call(this, y)
-    }
-    return y
+): J
+export function pipe<A, B, C, D, E, F, G, H, I, J, K>(
+  a: A,
+  ab: (a: A) => B,
+  bc: (b: B) => C,
+  cd: (c: C) => D,
+  de: (d: D) => E,
+  ef: (e: E) => F,
+  fg: (f: F) => G,
+  gh: (g: G) => H,
+  hi: (h: H) => I,
+  ij: (i: I) => J,
+  jk: (j: J) => K
+): K
+export function pipe<A, B, C, D, E, F, G, H, I, J, K, L>(
+  a: A,
+  ab: (a: A) => B,
+  bc: (b: B) => C,
+  cd: (c: C) => D,
+  de: (d: D) => E,
+  ef: (e: E) => F,
+  fg: (f: F) => G,
+  gh: (g: G) => H,
+  hi: (h: H) => I,
+  ij: (i: I) => J,
+  jk: (j: J) => K,
+  kl: (k: K) => L
+): L
+export function pipe<A, B, C, D, E, F, G, H, I, J, K, L, M>(
+  a: A,
+  ab: (a: A) => B,
+  bc: (b: B) => C,
+  cd: (c: C) => D,
+  de: (d: D) => E,
+  ef: (e: E) => F,
+  fg: (f: F) => G,
+  gh: (g: G) => H,
+  hi: (h: H) => I,
+  ij: (i: I) => J,
+  jk: (j: J) => K,
+  kl: (k: K) => L,
+  lm: (l: L) => M
+): M
+export function pipe<A, B, C, D, E, F, G, H, I, J, K, L, M, N>(
+  a: A,
+  ab: (a: A) => B,
+  bc: (b: B) => C,
+  cd: (c: C) => D,
+  de: (d: D) => E,
+  ef: (e: E) => F,
+  fg: (f: F) => G,
+  gh: (g: G) => H,
+  hi: (h: H) => I,
+  ij: (i: I) => J,
+  jk: (j: J) => K,
+  kl: (k: K) => L,
+  lm: (l: L) => M,
+  mn: (m: M) => N
+): N
+export function pipe<A, B, C, D, E, F, G, H, I, J, K, L, M, N, O>(
+  a: A,
+  ab: (a: A) => B,
+  bc: (b: B) => C,
+  cd: (c: C) => D,
+  de: (d: D) => E,
+  ef: (e: E) => F,
+  fg: (f: F) => G,
+  gh: (g: G) => H,
+  hi: (h: H) => I,
+  ij: (i: I) => J,
+  jk: (j: J) => K,
+  kl: (k: K) => L,
+  lm: (l: L) => M,
+  mn: (m: M) => N,
+  no: (n: N) => O
+): O
+
+export function pipe<A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P>(
+  a: A,
+  ab: (a: A) => B,
+  bc: (b: B) => C,
+  cd: (c: C) => D,
+  de: (d: D) => E,
+  ef: (e: E) => F,
+  fg: (f: F) => G,
+  gh: (g: G) => H,
+  hi: (h: H) => I,
+  ij: (i: I) => J,
+  jk: (j: J) => K,
+  kl: (k: K) => L,
+  lm: (l: L) => M,
+  mn: (m: M) => N,
+  no: (n: N) => O,
+  op: (o: O) => P
+): P
+
+export function pipe<A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q>(
+  a: A,
+  ab: (a: A) => B,
+  bc: (b: B) => C,
+  cd: (c: C) => D,
+  de: (d: D) => E,
+  ef: (e: E) => F,
+  fg: (f: F) => G,
+  gh: (g: G) => H,
+  hi: (h: H) => I,
+  ij: (i: I) => J,
+  jk: (j: J) => K,
+  kl: (k: K) => L,
+  lm: (l: L) => M,
+  mn: (m: M) => N,
+  no: (n: N) => O,
+  op: (o: O) => P,
+  pq: (p: P) => Q
+): Q
+
+export function pipe<A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R>(
+  a: A,
+  ab: (a: A) => B,
+  bc: (b: B) => C,
+  cd: (c: C) => D,
+  de: (d: D) => E,
+  ef: (e: E) => F,
+  fg: (f: F) => G,
+  gh: (g: G) => H,
+  hi: (h: H) => I,
+  ij: (i: I) => J,
+  jk: (j: J) => K,
+  kl: (k: K) => L,
+  lm: (l: L) => M,
+  mn: (m: M) => N,
+  no: (n: N) => O,
+  op: (o: O) => P,
+  pq: (p: P) => Q,
+  qr: (q: Q) => R
+): R
+
+export function pipe<A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S>(
+  a: A,
+  ab: (a: A) => B,
+  bc: (b: B) => C,
+  cd: (c: C) => D,
+  de: (d: D) => E,
+  ef: (e: E) => F,
+  fg: (f: F) => G,
+  gh: (g: G) => H,
+  hi: (h: H) => I,
+  ij: (i: I) => J,
+  jk: (j: J) => K,
+  kl: (k: K) => L,
+  lm: (l: L) => M,
+  mn: (m: M) => N,
+  no: (n: N) => O,
+  op: (o: O) => P,
+  pq: (p: P) => Q,
+  qr: (q: Q) => R,
+  rs: (r: R) => S
+): S
+
+export function pipe<A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T>(
+  a: A,
+  ab: (a: A) => B,
+  bc: (b: B) => C,
+  cd: (c: C) => D,
+  de: (d: D) => E,
+  ef: (e: E) => F,
+  fg: (f: F) => G,
+  gh: (g: G) => H,
+  hi: (h: H) => I,
+  ij: (i: I) => J,
+  jk: (j: J) => K,
+  kl: (k: K) => L,
+  lm: (l: L) => M,
+  mn: (m: M) => N,
+  no: (n: N) => O,
+  op: (o: O) => P,
+  pq: (p: P) => Q,
+  qr: (q: Q) => R,
+  rs: (r: R) => S,
+  st: (s: S) => T
+): T
+export function pipe(
+  a: unknown,
+  ab?: Function,
+  bc?: Function,
+  cd?: Function,
+  de?: Function,
+  ef?: Function,
+  fg?: Function,
+  gh?: Function,
+  hi?: Function,
+  ij?: Function,
+  jk?: Function,
+  kl?: Function,
+  lm?: Function,
+  mn?: Function,
+  no?: Function,
+  op?: Function,
+  pq?: Function,
+  qr?: Function,
+  rs?: Function,
+  st?: Function
+): unknown {
+  switch (arguments.length) {
+    case 1:
+      return a
+    case 2:
+      return ab!(a)
+    case 3:
+      return bc!(ab!(a))
+    case 4:
+      return cd!(bc!(ab!(a)))
+    case 5:
+      return de!(cd!(bc!(ab!(a))))
+    case 6:
+      return ef!(de!(cd!(bc!(ab!(a)))))
+    case 7:
+      return fg!(ef!(de!(cd!(bc!(ab!(a))))))
+    case 8:
+      return gh!(fg!(ef!(de!(cd!(bc!(ab!(a)))))))
+    case 9:
+      return hi!(gh!(fg!(ef!(de!(cd!(bc!(ab!(a))))))))
+    case 10:
+      return ij!(hi!(gh!(fg!(ef!(de!(cd!(bc!(ab!(a)))))))))
+    case 11:
+      return jk!(ij!(hi!(gh!(fg!(ef!(de!(cd!(bc!(ab!(a))))))))))
+    case 12:
+      return kl!(jk!(ij!(hi!(gh!(fg!(ef!(de!(cd!(bc!(ab!(a)))))))))))
+    case 13:
+      return lm!(kl!(jk!(ij!(hi!(gh!(fg!(ef!(de!(cd!(bc!(ab!(a))))))))))))
+    case 14:
+      return mn!(lm!(kl!(jk!(ij!(hi!(gh!(fg!(ef!(de!(cd!(bc!(ab!(a)))))))))))))
+    case 15:
+      return no!(mn!(lm!(kl!(jk!(ij!(hi!(gh!(fg!(ef!(de!(cd!(bc!(ab!(a))))))))))))))
+    case 16:
+      return op!(no!(mn!(lm!(kl!(jk!(ij!(hi!(gh!(fg!(ef!(de!(cd!(bc!(ab!(a)))))))))))))))
+    case 17:
+      return pq!(op!(no!(mn!(lm!(kl!(jk!(ij!(hi!(gh!(fg!(ef!(de!(cd!(bc!(ab!(a))))))))))))))))
+    case 18:
+      return qr!(pq!(op!(no!(mn!(lm!(kl!(jk!(ij!(hi!(gh!(fg!(ef!(de!(cd!(bc!(ab!(a)))))))))))))))))
+    case 19:
+      return rs!(qr!(pq!(op!(no!(mn!(lm!(kl!(jk!(ij!(hi!(gh!(fg!(ef!(de!(cd!(bc!(ab!(a))))))))))))))))))
+    case 20:
+      return st!(rs!(qr!(pq!(op!(no!(mn!(lm!(kl!(jk!(ij!(hi!(gh!(fg!(ef!(de!(cd!(bc!(ab!(a)))))))))))))))))))
   }
+  return
 }
 
 /**
- * @function
- * @since 1.0.0
+ * Type hole simulation
+ *
+ * @since 2.7.0
  */
-export const concat = <A>(x: Array<A>, y: Array<A>): Array<A> => {
-  const lenx = x.length
-  const leny = y.length
-  const r = Array(lenx + leny)
-  for (let i = 0; i < lenx; i++) {
-    r[i] = x[i]
-  }
-  for (let i = 0; i < leny; i++) {
-    r[i + lenx] = y[i]
-  }
-  return r
-}
-
-export function curried(f: Function, n: number, acc: Array<any>) {
-  return function(this: any, x: any) {
-    const combined = concat(acc, [x])
-    return n === 0 ? f.apply(this, combined) : curried(f, n - 1, combined)
-  }
-}
-
-export function curry<A, B, C>(f: Function2<A, B, C>): Curried2<A, B, C>
-export function curry<A, B, C, D>(f: Function3<A, B, C, D>): Curried3<A, B, C, D>
-export function curry<A, B, C, D, E>(f: Function4<A, B, C, D, E>): Curried4<A, B, C, D, E>
-export function curry<A, B, C, D, E, F>(f: Function5<A, B, C, D, E, F>): Curried5<A, B, C, D, E, F>
-export function curry<A, B, C, D, E, F, G>(f: Function6<A, B, C, D, E, F, G>): Curried6<A, B, C, D, E, F, G>
-export function curry<A, B, C, D, E, F, G, H>(f: Function7<A, B, C, D, E, F, G, H>): Curried7<A, B, C, D, E, F, G, H>
-export function curry<A, B, C, D, E, F, G, H, I>(
-  f: Function8<A, B, C, D, E, F, G, H, I>
-): Curried8<A, B, C, D, E, F, G, H, I>
-export function curry<A, B, C, D, E, F, G, H, I, J>(
-  f: Function9<A, B, C, D, E, F, G, H, I, J>
-): Curried9<A, B, C, D, E, F, G, H, I, J>
-/**
- * @function
- * @since 1.0.0
- */
-export function curry(f: Function) {
-  return curried(f, f.length - 1, [])
-}
-
-/* tslint:disable-next-line */
-const getFunctionName = (f: Function): string => (f as any).displayName || f.name || `<function${f.length}>`
+export const hole: <T>() => T = absurd as any
 
 /**
- * @function
- * @since 1.0.0
+ * @internal
  */
-export const toString = (x: any): string => {
-  if (typeof x === 'string') {
-    return JSON.stringify(x)
-  }
-  if (x instanceof Date) {
-    return `new Date('${x.toISOString()}')`
-  }
-  if (Array.isArray(x)) {
-    return `[${x.map(toString).join(', ')}]`
-  }
-  if (typeof x === 'function') {
-    return getFunctionName(x)
-  }
-  if (x == null) {
-    return String(x)
-  }
-  if (x.toString !== Object.prototype.toString) {
-    return x.toString()
-  }
-  try {
-    return JSON.stringify(x, null, 2)
-  } catch (e) {
-    return String(x)
-  }
-}
+export const bind_ = <A, N extends string, B>(
+  a: A,
+  name: Exclude<N, keyof A>,
+  b: B
+): { [K in keyof A | N]: K extends keyof A ? A[K] : B } => Object.assign({}, a, { [name]: b }) as any
 
 /**
- * @function
- * @since 1.0.0
+ * @internal
  */
-export const tuple = <A, B>(a: A, b: B): [A, B] => {
-  return [a, b]
-}
-
-/**
- * @function
- * @since 1.0.0
- */
-export const tupleCurried = <A>(a: A) => <B>(b: B): [A, B] => {
-  return [a, b]
-}
-
-/**
- * Applies a function to an argument ($)
- * @function
- * @since 1.0.0
- */
-export const apply = <A, B>(f: (a: A) => B) => (a: A): B => {
-  return f(a)
-}
-
-/**
- * Applies an argument to a function (#)
- * @function
- * @since 1.0.0
- */
-export const applyFlipped = <A>(a: A) => <B>(f: (a: A) => B): B => {
-  return f(a)
-}
-
-/** For use with phantom fields */
-export const phantom: any = undefined
-
-/**
- * A thunk that returns always the `identity` function.
- * For use with `applySecond` methods.
- * @function
- * @since 1.5.0
- */
-export const constIdentity = (): (<A>(a: A) => A) => {
-  return identity
-}
-
-/**
- * @function
- * @since 1.9.0
- */
-export const increment = (n: number): number => {
-  return n + 1
-}
-
-/**
- * @function
- * @since 1.9.0
- */
-export const decrement = (n: number): number => {
-  return n - 1
-}
+export const bindTo_ = <N extends string>(name: N) => <B>(b: B): { [K in N]: B } => ({ [name]: b } as any)

@@ -1,35 +1,32 @@
+/**
+ * @since 2.0.0
+ */
 import { IO } from './IO'
 
-// Adapted from https://github.com/purescript/purescript-console
-
 /**
- * @function
- * @since 1.0.0
+ * @since 2.0.0
  */
-export const log = (s: any): IO<void> => {
-  return new IO(() => console.log(s)) // tslint:disable-line:no-console
+export function log(s: unknown): IO<void> {
+  return () => console.log(s) // tslint:disable-line:no-console
 }
 
 /**
- * @function
- * @since 1.0.0
+ * @since 2.0.0
  */
-export const warn = (s: any): IO<void> => {
-  return new IO(() => console.warn(s)) // tslint:disable-line:no-console
+export function warn(s: unknown): IO<void> {
+  return () => console.warn(s) // tslint:disable-line:no-console
 }
 
 /**
- * @function
- * @since 1.0.0
+ * @since 2.0.0
  */
-export const error = (s: any): IO<void> => {
-  return new IO(() => console.error(s)) // tslint:disable-line:no-console
+export function error(s: unknown): IO<void> {
+  return () => console.error(s) // tslint:disable-line:no-console
 }
 
 /**
- * @function
- * @since 1.0.0
+ * @since 2.0.0
  */
-export const info = (s: any): IO<void> => {
-  return new IO(() => console.info(s)) // tslint:disable-line:no-console
+export function info(s: unknown): IO<void> {
+  return () => console.info(s) // tslint:disable-line:no-console
 }

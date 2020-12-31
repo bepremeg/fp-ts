@@ -1,897 +1,1664 @@
+/**
+ * @since 2.0.0
+ */
+import { Alt1 } from './Alt'
 import { Alternative1 } from './Alternative'
-import { Applicative, Applicative1, Applicative2, Applicative2C, Applicative3, Applicative3C } from './Applicative'
-import { liftA2 } from './Apply'
+import { Applicative1 } from './Applicative'
+import { Compactable1, Separated } from './Compactable'
 import { Either } from './Either'
+import { Eq } from './Eq'
 import { Extend1 } from './Extend'
+import { Filterable1 } from './Filterable'
+import { FilterableWithIndex1, PredicateWithIndex, RefinementWithIndex } from './FilterableWithIndex'
 import { Foldable1 } from './Foldable'
-import { HKT, Type, Type2, Type3, URIS, URIS2, URIS3 } from './HKT'
+import { FoldableWithIndex1 } from './FoldableWithIndex'
+import { Lazy, Predicate, Refinement } from './function'
+import { Functor1 } from './Functor'
+import { FunctorWithIndex1 } from './FunctorWithIndex'
 import { Monad1 } from './Monad'
 import { Monoid } from './Monoid'
-import { Option, fromNullable, none, some } from './Option'
-import { Ord, getSemigroup, ordNumber } from './Ord'
-import { Ordering } from './Ordering'
-import { Plus1 } from './Plus'
-import { Setoid, getArraySetoid } from './Setoid'
-import { Traversable1 } from './Traversable'
+import { NonEmptyArray } from './NonEmptyArray'
+import { Option } from './Option'
+import { Ord } from './Ord'
+import * as RA from './ReadonlyArray'
+import { Show } from './Show'
+import { PipeableTraverse1, Traversable1 } from './Traversable'
+import { PipeableTraverseWithIndex1, TraversableWithIndex1 } from './TraversableWithIndex'
 import { Unfoldable1 } from './Unfoldable'
-import { Endomorphism, Predicate, Refinement, concat, tuple, identity } from './function'
-import { Compactable1, Separated } from './Compactable'
-import { Filterable1 } from './Filterable'
-import { Witherable1 } from './Witherable'
+import { PipeableWilt1, PipeableWither1, Witherable1 } from './Witherable'
 
-// Adapted from https://github.com/purescript/purescript-arrays
+// -------------------------------------------------------------------------------------
+// model
+// -------------------------------------------------------------------------------------
 
-declare global {
-  interface Array<T> {
-    /** phantom property added by `fp-ts` */
-    _URI: URI
-    /** phantom property added by `fp-ts` */
-    _A: T
-  }
-}
-
-declare module './HKT' {
-  interface URI2HKT<A> {
-    Array: Array<A>
-  }
-}
-
-export const URI = 'Array'
-
-export type URI = typeof URI
+/* tslint:disable:readonly-array */
 
 /**
- * @function
- * @since 1.0.0
+ * @category instances
+ * @since 2.0.0
  */
-export const getMonoid = <A = never>(): Monoid<Array<A>> => {
-  return {
-    concat,
-    empty
-  }
-}
+export const getShow: <A>(S: Show<A>) => Show<Array<A>> = RA.getShow
 
 /**
- * Derives a Setoid over the Array of a given element type from the Setoid of that type. The derived setoid defines two
- * arrays as equal if all elements of both arrays are compared equal pairwise with the given setoid 'S'. In case of
- * arrays of different lengths, the result is non equality.
+ * Returns a `Monoid` for `Array<A>`
  *
- * @constant
- * @since 1.0.0
+ * @example
+ * import { getMonoid } from 'fp-ts/Array'
+ *
+ * const M = getMonoid<number>()
+ * assert.deepStrictEqual(M.concat([1, 2], [3, 4]), [1, 2, 3, 4])
+ *
+ * @category instances
+ * @since 2.0.0
  */
-export const getSetoid: <A>(S: Setoid<A>) => Setoid<Array<A>> = getArraySetoid
+export const getMonoid: <A = never>() => Monoid<Array<A>> = RA.getMonoid as any
 
 /**
- * Derives an Order over the Array of a given element type from the Order, 'O', of that type. The ordering between two
- * such arrays is equal to: the first non equal comparison of each arrays elements taken pairwise in increasing order,
- * in case of equality over all the pairwise elements; the longest array is considered the greatest, if both arrays have
+ * Derives an `Eq` over the `Array` of a given element type from the `Eq` of that type. The derived `Eq` defines two
+ * arrays as equal if all elements of both arrays are compared equal pairwise with the given `E`. In case of arrays of
+ * different lengths, the result is non equality.
+ *
+ * @example
+ * import { eqString } from 'fp-ts/Eq'
+ * import { getEq } from 'fp-ts/Array'
+ *
+ * const E = getEq(eqString)
+ * assert.strictEqual(E.equals(['a', 'b'], ['a', 'b']), true)
+ * assert.strictEqual(E.equals(['a'], []), false)
+ *
+ * @category instances
+ * @since 2.0.0
+ */
+export const getEq: <A>(E: Eq<A>) => Eq<Array<A>> = RA.getEq
+
+/**
+ * Derives an `Ord` over the `Array` of a given element type from the `Ord` of that type. The ordering between two such
+ * arrays is equal to: the first non equal comparison of each arrays elements taken pairwise in increasing order, in
+ * case of equality over all the pairwise elements; the longest array is considered the greatest, if both arrays have
  * the same length, the result is equality.
  *
- * @function
- * @since 1.2.0
- */
-export const getOrd = <A>(O: Ord<A>): Ord<Array<A>> => ({
-  ...getSetoid(O),
-  compare: (a: Array<A>, b: Array<A>): Ordering => {
-    const aLen = a.length
-    const bLen = b.length
-    const len = Math.min(aLen, bLen)
-    for (let i = 0; i < len; i++) {
-      const order = O.compare(a[i], b[i])
-      if (order !== 0) {
-        return order
-      }
-    }
-    return ordNumber.compare(aLen, bLen)
-  }
-})
-
-const map = <A, B>(fa: Array<A>, f: (a: A) => B): Array<B> => {
-  const l = fa.length
-  const r = new Array(l)
-  for (let i = 0; i < l; i++) {
-    r[i] = f(fa[i])
-  }
-  return r
-}
-
-const of = <A>(a: A): Array<A> => {
-  return [a]
-}
-
-const ap = <A, B>(fab: Array<(a: A) => B>, fa: Array<A>): Array<B> => {
-  return flatten(map(fab, f => map(fa, f)))
-}
-
-const chain = <A, B>(fa: Array<A>, f: (a: A) => Array<B>): Array<B> => {
-  let resLen = 0
-  const l = fa.length
-  const temp = new Array(l)
-  for (let i = 0; i < l; i++) {
-    const e = fa[i]
-    const arr = f(e)
-    resLen += arr.length
-    temp[i] = arr
-  }
-  const r = Array(resLen)
-  let start = 0
-  for (let i = 0; i < l; i++) {
-    const arr = temp[i]
-    const l = arr.length
-    for (let j = 0; j < l; j++) {
-      r[j + start] = arr[j]
-    }
-    start += l
-  }
-  return r
-}
-
-const reduce = <A, B>(fa: Array<A>, b: B, f: (b: B, a: A) => B): B => {
-  const l = fa.length
-  let r = b
-  for (let i = 0; i < l; i++) {
-    r = f(r, fa[i])
-  }
-  return r
-}
-
-export function traverse<F extends URIS3>(
-  F: Applicative3<F>
-): <U, L, A, B>(ta: Array<A>, f: (a: A) => Type3<F, U, L, B>) => Type3<F, U, L, Array<B>>
-export function traverse<F extends URIS3, U, L>(
-  F: Applicative3C<F, U, L>
-): <A, B>(ta: Array<A>, f: (a: A) => Type3<F, U, L, B>) => Type3<F, U, L, Array<B>>
-export function traverse<F extends URIS2>(
-  F: Applicative2<F>
-): <L, A, B>(ta: Array<A>, f: (a: A) => Type2<F, L, B>) => Type2<F, L, Array<B>>
-export function traverse<F extends URIS2, L>(
-  F: Applicative2C<F, L>
-): <A, B>(ta: Array<A>, f: (a: A) => Type2<F, L, B>) => Type2<F, L, Array<B>>
-export function traverse<F extends URIS>(
-  F: Applicative1<F>
-): <A, B>(ta: Array<A>, f: (a: A) => Type<F, B>) => Type<F, Array<B>>
-export function traverse<F>(F: Applicative<F>): <A, B>(ta: Array<A>, f: (a: A) => HKT<F, B>) => HKT<F, Array<B>>
-/**
- * @function
- * @since 1.0.0
- */
-export function traverse<F>(F: Applicative<F>): <A, B>(ta: Array<A>, f: (a: A) => HKT<F, B>) => HKT<F, Array<B>> {
-  const liftedSnoc: <A>(fa: HKT<F, Array<A>>) => (fb: HKT<F, A>) => HKT<F, Array<A>> = liftA2(F)(as => a => snoc(as, a))
-  return (ta, f) => reduce(ta, F.of(zero()), (fab, a) => liftedSnoc(fab)(f(a)))
-}
-
-/**
- * An empty array
- *
- * @constant
- * @since 1.9.0
- */
-export const empty: Array<never> = []
-
-const zero = <A>(): Array<A> => empty
-
-const alt = concat
-
-const unfoldr = <A, B>(b: B, f: (b: B) => Option<[A, B]>): Array<A> => {
-  const ret: Array<A> = []
-  let bb = b
-  while (true) {
-    const mt = f(bb)
-    if (mt.isSome()) {
-      const [a, b] = mt.value
-      ret.push(a)
-      bb = b
-    } else {
-      break
-    }
-  }
-  return ret
-}
-
-const extend = <A, B>(fa: Array<A>, f: (fa: Array<A>) => B): Array<B> => {
-  return fa.map((_, i, as) => f(as.slice(i)))
-}
-
-/**
  * @example
- * flatten([[1], [2], [3]]) // [1, 2, 3]
+ * import { getOrd } from 'fp-ts/Array'
+ * import { ordString } from 'fp-ts/Ord'
  *
- * @function
- * @since 1.0.0
+ * const O = getOrd(ordString)
+ * assert.strictEqual(O.compare(['b'], ['a']), 1)
+ * assert.strictEqual(O.compare(['a'], ['a']), 0)
+ * assert.strictEqual(O.compare(['a'], ['b']), -1)
+ *
+ * @category instances
+ * @since 2.0.0
  */
-export const flatten = <A>(ffa: Array<Array<A>>): Array<A> => {
-  let rLen = 0
-  const len = ffa.length
-  for (let i = 0; i < len; i++) {
-    rLen += ffa[i].length
-  }
-  const r = Array(rLen)
-  let start = 0
-  for (let i = 0; i < len; i++) {
-    const arr = ffa[i]
-    const l = arr.length
-    for (let j = 0; j < l; j++) {
-      r[j + start] = arr[j]
-    }
-    start += l
-  }
-  return r
-}
+export const getOrd: <A>(O: Ord<A>) => Ord<Array<A>> = RA.getOrd
+
+// -------------------------------------------------------------------------------------
+// constructors
+// -------------------------------------------------------------------------------------
+
+/**
+ * Return a list of length `n` with element `i` initialized with `f(i)`
+ *
+ * @example
+ * import { makeBy } from 'fp-ts/Array'
+ *
+ * const double = (n: number): number => n * 2
+ * assert.deepStrictEqual(makeBy(5, double), [0, 2, 4, 6, 8])
+ *
+ * @category constructors
+ * @since 2.0.0
+ */
+export const makeBy: <A>(n: number, f: (i: number) => A) => Array<A> = RA.makeBy as any
+
+/**
+ * Create an array containing a range of integers, including both endpoints
+ *
+ * @example
+ * import { range } from 'fp-ts/Array'
+ *
+ * assert.deepStrictEqual(range(1, 5), [1, 2, 3, 4, 5])
+ *
+ * @category constructors
+ * @since 2.0.0
+ */
+export const range: (start: number, end: number) => Array<number> = RA.range as any
+
+/**
+ * Create an array containing a value repeated the specified number of times
+ *
+ * @example
+ * import { replicate } from 'fp-ts/Array'
+ *
+ * assert.deepStrictEqual(replicate(3, 'a'), ['a', 'a', 'a'])
+ *
+ * @category constructors
+ * @since 2.0.0
+ */
+export const replicate: <A>(n: number, a: A) => Array<A> = RA.replicate as any
+
+/**
+ * Removes one level of nesting.
+ *
+ * Derivable from `Monad`.
+ *
+ * @example
+ * import { flatten } from 'fp-ts/Array'
+ *
+ * assert.deepStrictEqual(flatten([[1], [2], [3]]), [1, 2, 3])
+ *
+ * @category combinators
+ * @since 2.0.0
+ */
+export const flatten: <A>(mma: Array<Array<A>>) => Array<A> = RA.flatten as any
 
 /**
  * Break an array into its first element and remaining elements
- * @function
- * @since 1.0.0
+ *
+ * @example
+ * import { foldLeft } from 'fp-ts/Array'
+ *
+ * const len: <A>(as: Array<A>) => number = foldLeft(() => 0, (_, tail) => 1 + len(tail))
+ * assert.strictEqual(len([1, 2, 3]), 3)
+ *
+ * @category destructors
+ * @since 2.0.0
  */
-export const fold = <A, B>(as: Array<A>, b: B, cons: (head: A, tail: Array<A>) => B): B => {
-  return isEmpty(as) ? b : cons(as[0], as.slice(1))
-}
-
-/**
- * Lazy version of {@link fold}
- * @function
- * @since 1.0.0
- */
-export const foldL = <A, B>(as: Array<A>, nil: () => B, cons: (head: A, tail: Array<A>) => B): B => {
-  return isEmpty(as) ? nil() : cons(as[0], as.slice(1))
-}
+export const foldLeft: <A, B>(
+  onEmpty: Lazy<B>,
+  onCons: (head: A, tail: Array<A>) => B
+) => (as: Array<A>) => B = RA.foldLeft as any
 
 /**
  * Break an array into its initial elements and the last element
- * @function
- * @since 1.7.0
- * @param as
- * @param b
- * @param cons
+ *
+ * @category destructors
+ * @since 2.0.0
  */
-export const foldr = <A, B>(as: Array<A>, b: B, cons: (init: Array<A>, last: A) => B): B => {
-  return isEmpty(as) ? b : cons(as.slice(0, as.length - 1), as[as.length - 1])
-}
-
-/**
- * Lazy version of {@link foldr}
- * @function
- * @since 1.7.0
- * @param as
- * @param nil
- * @param cons
- */
-export const foldrL = <A, B>(as: Array<A>, nil: () => B, cons: (init: Array<A>, last: A) => B): B => {
-  return isEmpty(as) ? nil() : cons(as.slice(0, as.length - 1), as[as.length - 1])
-}
+export const foldRight: <A, B>(
+  onEmpty: Lazy<B>,
+  onCons: (init: Array<A>, last: A) => B
+) => (as: Array<A>) => B = RA.foldRight as any
 
 /**
  * Same as `reduce` but it carries over the intermediate steps
  *
- * ```ts
- * scanLeft([1, 2, 3], 10, (b, a) => b - a) // [ 10, 9, 7, 4 ]
- * ```
+ * @example
+ * import { scanLeft } from 'fp-ts/Array'
  *
- * @function
- * @since 1.1.0
+ * assert.deepStrictEqual(scanLeft(10, (b, a: number) => b - a)([1, 2, 3]), [10, 9, 7, 4])
+ *
+ * @category combinators
+ * @since 2.0.0
  */
-export const scanLeft = <A, B>(as: Array<A>, b: B, f: ((b: B, a: A) => B)): Array<B> => {
-  const l = as.length
-  const r: Array<B> = new Array(l + 1)
-  r[0] = b
-  for (let i = 0; i < l; i++) {
-    r[i + 1] = f(r[i], as[i])
-  }
-  return r
-}
+export const scanLeft: <A, B>(b: B, f: (b: B, a: A) => B) => (as: Array<A>) => Array<B> = RA.scanLeft as any
 
 /**
  * Fold an array from the right, keeping all intermediate results instead of only the final result
  *
- * ```ts
- * scanRight([1, 2, 3], 10, (a, b) => b - a) // [ 4, 5, 7, 10 ]
- * ```
+ * @example
+ * import { scanRight } from 'fp-ts/Array'
  *
- * @function
- * @since 1.1.0
+ * assert.deepStrictEqual(scanRight(10, (a: number, b) => b - a)([1, 2, 3]), [4, 5, 7, 10])
+ *
+ * @category combinators
+ * @since 2.0.0
  */
-export const scanRight = <A, B>(as: Array<A>, b: B, f: (a: A, b: B) => B): Array<B> => {
-  const l = as.length
-  const r: Array<B> = new Array(l + 1)
-  r[l] = b
-  for (let i = l - 1; i >= 0; i--) {
-    r[i] = f(as[i], r[i + 1])
-  }
-  return r
-}
+export const scanRight: <A, B>(b: B, f: (a: A, b: B) => B) => (as: Array<A>) => Array<B> = RA.scanRight as any
 
 /**
  * Test whether an array is empty
- * @function
- * @since 1.0.0
+ *
+ * @example
+ * import { isEmpty } from 'fp-ts/Array'
+ *
+ * assert.strictEqual(isEmpty([]), true)
+ *
+ * @since 2.0.0
  */
-export const isEmpty = <A>(as: Array<A>): boolean => {
-  return as.length === 0
-}
+export const isEmpty: <A>(as: Array<A>) => boolean = RA.isEmpty
+
+/**
+ * Test whether an array is non empty narrowing down the type to `NonEmptyArray<A>`
+ *
+ * @category guards
+ * @since 2.0.0
+ */
+export const isNonEmpty: <A>(as: Array<A>) => as is NonEmptyArray<A> = RA.isNonEmpty as any
 
 /**
  * Test whether an array contains a particular index
- * @function
- * @since 1.0.0
+ *
+ * @since 2.0.0
  */
-export const isOutOfBound = <A>(i: number, as: Array<A>): boolean => {
-  return i < 0 || i >= as.length
-}
+export const isOutOfBound: <A>(i: number, as: Array<A>) => boolean = RA.isOutOfBound
 
+// TODO: remove non-curried overloading in v3
 /**
  * This function provides a safe way to read a value at a particular index from an array
- * @function
- * @since 1.0.0
+ *
+ * @example
+ * import { lookup } from 'fp-ts/Array'
+ * import { some, none } from 'fp-ts/Option'
+ * import { pipe } from 'fp-ts/function'
+ *
+ * assert.deepStrictEqual(pipe([1, 2, 3], lookup(1)), some(2))
+ * assert.deepStrictEqual(pipe([1, 2, 3], lookup(3)), none)
+ *
+ * @since 2.0.0
  */
-export const index = <A>(i: number, as: Array<A>): Option<A> => {
-  return isOutOfBound(i, as) ? none : some(as[i])
-}
+export const lookup: {
+  (i: number): <A>(as: Array<A>) => Option<A>
+  <A>(i: number, as: Array<A>): Option<A>
+} = RA.lookup
 
+// TODO: remove non-curried overloading in v3
 /**
- * Attaches an element to the front of an array, creating a new array
- * @function
- * @since 1.0.0
+ * Attaches an element to the front of an array, creating a new non empty array
+ *
+ * @example
+ * import { cons } from 'fp-ts/Array'
+ * import { pipe } from 'fp-ts/function'
+ *
+ * assert.deepStrictEqual(pipe([1, 2, 3], cons(0)), [0, 1, 2, 3])
+ *
+ * @category constructors
+ * @since 2.0.0
  */
-export const cons = <A>(a: A, as: Array<A>): Array<A> => {
-  const len = as.length
-  const r = Array(len + 1)
-  for (let i = 0; i < len; i++) {
-    r[i + 1] = as[i]
-  }
-  r[0] = a
-  return r
-}
+export const cons: {
+  <A>(head: A): (tail: Array<A>) => NonEmptyArray<A>
+  <A>(head: A, tail: Array<A>): NonEmptyArray<A>
+} = RA.cons as any
 
+// TODO: curry in v3
 /**
- * Append an element to the end of an array, creating a new array
- * @function
- * @since 1.0.0
+ * Append an element to the end of an array, creating a new non empty array
+ *
+ * @example
+ * import { snoc } from 'fp-ts/Array'
+ *
+ * assert.deepStrictEqual(snoc([1, 2, 3], 4), [1, 2, 3, 4])
+ *
+ * @category constructors
+ * @since 2.0.0
  */
-export const snoc = <A>(as: Array<A>, a: A): Array<A> => {
-  const len = as.length
-  const r = Array(len + 1)
-  for (let i = 0; i < len; i++) {
-    r[i] = as[i]
-  }
-  r[len] = a
-  return r
-}
+export const snoc: <A>(init: Array<A>, end: A) => NonEmptyArray<A> = RA.snoc as any
 
 /**
  * Get the first element in an array, or `None` if the array is empty
- * @function
- * @since 1.0.0
+ *
+ * @example
+ * import { head } from 'fp-ts/Array'
+ * import { some, none } from 'fp-ts/Option'
+ *
+ * assert.deepStrictEqual(head([1, 2, 3]), some(1))
+ * assert.deepStrictEqual(head([]), none)
+ *
+ * @category destructors
+ * @since 2.0.0
  */
-export const head = <A>(as: Array<A>): Option<A> => {
-  return isEmpty(as) ? none : some(as[0])
-}
-
+export const head: <A>(as: Array<A>) => Option<A> = RA.head
 /**
  * Get the last element in an array, or `None` if the array is empty
- * @function
- * @since 1.0.0
+ *
+ * @example
+ * import { last } from 'fp-ts/Array'
+ * import { some, none } from 'fp-ts/Option'
+ *
+ * assert.deepStrictEqual(last([1, 2, 3]), some(3))
+ * assert.deepStrictEqual(last([]), none)
+ *
+ * @category destructors
+ * @since 2.0.0
  */
-export const last = <A>(as: Array<A>): Option<A> => {
-  return index(as.length - 1, as)
-}
+export const last: <A>(as: Array<A>) => Option<A> = RA.last
 
 /**
  * Get all but the first element of an array, creating a new array, or `None` if the array is empty
- * @function
- * @since 1.0.0
+ *
+ * @example
+ * import { tail } from 'fp-ts/Array'
+ * import { some, none } from 'fp-ts/Option'
+ *
+ * assert.deepStrictEqual(tail([1, 2, 3]), some([2, 3]))
+ * assert.deepStrictEqual(tail([]), none)
+ *
+ * @category destructors
+ * @since 2.0.0
  */
-export const tail = <A>(as: Array<A>): Option<Array<A>> => {
-  return isEmpty(as) ? none : some(as.slice(1))
-}
+export const tail: <A>(as: Array<A>) => Option<Array<A>> = RA.tail as any
 
 /**
  * Get all but the last element of an array, creating a new array, or `None` if the array is empty
- * @function
- * @since 1.0.0
+ *
+ * @example
+ * import { init } from 'fp-ts/Array'
+ * import { some, none } from 'fp-ts/Option'
+ *
+ * assert.deepStrictEqual(init([1, 2, 3]), some([1, 2]))
+ * assert.deepStrictEqual(init([]), none)
+ *
+ * @category destructors
+ * @since 2.0.0
  */
-export const init = <A>(as: Array<A>): Option<Array<A>> => {
-  const len = as.length
-  return len === 0 ? none : some(as.slice(0, len - 1))
-}
+export const init: <A>(as: Array<A>) => Option<Array<A>> = RA.init as any
 
 /**
- * Keep only a number of elements from the start of an array, creating a new array
- * @function
- * @since 1.0.0
+ * Keep only a number of elements from the start of an array, creating a new array.
+ * `n` must be a natural number
+ *
+ * @example
+ * import { takeLeft } from 'fp-ts/Array'
+ *
+ * assert.deepStrictEqual(takeLeft(2)([1, 2, 3]), [1, 2])
+ *
+ * @category combinators
+ * @since 2.0.0
  */
-export const take = <A>(n: number, as: Array<A>): Array<A> => {
-  return as.slice(0, n)
+export const takeLeft: (n: number) => <A>(as: Array<A>) => Array<A> = RA.takeLeft as any
+
+/**
+ * Keep only a number of elements from the end of an array, creating a new array.
+ * `n` must be a natural number
+ *
+ * @example
+ * import { takeRight } from 'fp-ts/Array'
+ *
+ * assert.deepStrictEqual(takeRight(2)([1, 2, 3, 4, 5]), [4, 5])
+ *
+ * @category combinators
+ * @since 2.0.0
+ */
+export const takeRight: (n: number) => <A>(as: Array<A>) => Array<A> = RA.takeRight as any
+
+/**
+ * Calculate the longest initial subarray for which all element satisfy the specified predicate, creating a new array
+ *
+ * @example
+ * import { takeLeftWhile } from 'fp-ts/Array'
+ *
+ * assert.deepStrictEqual(takeLeftWhile((n: number) => n % 2 === 0)([2, 4, 3, 6]), [2, 4])
+ *
+ * @category combinators
+ * @since 2.0.0
+ */
+export function takeLeftWhile<A, B extends A>(refinement: Refinement<A, B>): (as: Array<A>) => Array<B>
+export function takeLeftWhile<A>(predicate: Predicate<A>): (as: Array<A>) => Array<A>
+export function takeLeftWhile<A>(predicate: Predicate<A>): (as: Array<A>) => Array<A> {
+  return RA.takeLeftWhile(predicate) as any
 }
 
-const spanIndexUncurry = <A>(as: Array<A>, predicate: Predicate<A>): number => {
-  const l = as.length
-  let i = 0
-  for (; i < l; i++) {
-    if (!predicate(as[i])) {
-      break
-    }
-  }
-  return i
-}
-
+/* tslint:disable:readonly-keyword */
 /**
  * Split an array into two parts:
  * 1. the longest initial subarray for which all elements satisfy the specified predicate
  * 2. the remaining elements
- * @function
- * @since 1.0.0
+ *
+ * @example
+ * import { spanLeft } from 'fp-ts/Array'
+ *
+ * assert.deepStrictEqual(spanLeft((n: number) => n % 2 === 1)([1, 3, 2, 4, 5]), { init: [1, 3], rest: [2, 4, 5] })
+ *
+ * @category destructors
+ * @since 2.0.0
  */
-export const span = <A>(as: Array<A>, predicate: Predicate<A>): { init: Array<A>; rest: Array<A> } => {
-  const i = spanIndexUncurry(as, predicate)
-  const init = Array(i)
-  for (let j = 0; j < i; j++) {
-    init[j] = as[j]
-  }
-  const l = as.length
-  const rest = Array(l - i)
-  for (let j = i; j < l; j++) {
-    rest[j - i] = as[j]
-  }
-  return { init, rest }
+export function spanLeft<A, B extends A>(
+  refinement: Refinement<A, B>
+): (as: Array<A>) => { init: Array<B>; rest: Array<A> }
+export function spanLeft<A>(predicate: Predicate<A>): (as: Array<A>) => { init: Array<A>; rest: Array<A> }
+export function spanLeft<A>(predicate: Predicate<A>): (as: Array<A>) => { init: Array<A>; rest: Array<A> } {
+  return RA.spanLeft(predicate) as any
 }
-
-/**
- * Calculate the longest initial subarray for which all element satisfy the specified predicate, creating a new array
- * @function
- * @since 1.0.0
- */
-export const takeWhile = <A>(as: Array<A>, predicate: Predicate<A>): Array<A> => {
-  const i = spanIndexUncurry(as, predicate)
-  const init = Array(i)
-  for (let j = 0; j < i; j++) {
-    init[j] = as[j]
-  }
-  return init
-}
+/* tslint:enable:readonly-keyword */
 
 /**
  * Drop a number of elements from the start of an array, creating a new array
- * @function
- * @since 1.0.0
+ *
+ * @example
+ * import { dropLeft } from 'fp-ts/Array'
+ *
+ * assert.deepStrictEqual(dropLeft(2)([1, 2, 3]), [3])
+ *
+ * @category combinators
+ * @since 2.0.0
  */
-export const drop = <A>(n: number, as: Array<A>): Array<A> => {
-  return as.slice(n, as.length)
-}
+export const dropLeft: (n: number) => <A>(as: Array<A>) => Array<A> = RA.dropLeft as any
+
+/**
+ * Drop a number of elements from the end of an array, creating a new array
+ *
+ * @example
+ * import { dropRight } from 'fp-ts/Array'
+ *
+ * assert.deepStrictEqual(dropRight(2)([1, 2, 3, 4, 5]), [1, 2, 3])
+ *
+ * @category combinators
+ * @since 2.0.0
+ */
+export const dropRight: (n: number) => <A>(as: Array<A>) => Array<A> = RA.dropRight as any
 
 /**
  * Remove the longest initial subarray for which all element satisfy the specified predicate, creating a new array
- * @function
- * @since 1.0.0
+ *
+ * @example
+ * import { dropLeftWhile } from 'fp-ts/Array'
+ *
+ * assert.deepStrictEqual(dropLeftWhile((n: number) => n % 2 === 1)([1, 3, 2, 4, 5]), [2, 4, 5])
+ *
+ * @category combinators
+ * @since 2.0.0
  */
-export const dropWhile = <A>(as: Array<A>, predicate: Predicate<A>): Array<A> => {
-  const i = spanIndexUncurry(as, predicate)
-  const l = as.length
-  const rest = Array(l - i)
-  for (let j = i; j < l; j++) {
-    rest[j - i] = as[j]
-  }
-  return rest
-}
+export const dropLeftWhile: <A>(predicate: Predicate<A>) => (as: Array<A>) => Array<A> = RA.dropLeftWhile as any
 
 /**
  * Find the first index for which a predicate holds
- * @function
- * @since 1.0.0
+ *
+ * @example
+ * import { findIndex } from 'fp-ts/Array'
+ * import { some, none } from 'fp-ts/Option'
+ *
+ * assert.deepStrictEqual(findIndex((n: number) => n === 2)([1, 2, 3]), some(1))
+ * assert.deepStrictEqual(findIndex((n: number) => n === 2)([]), none)
+ *
+ * @since 2.0.0
  */
-export const findIndex = <A>(as: Array<A>, predicate: Predicate<A>): Option<number> => {
-  const len = as.length
-  for (let i = 0; i < len; i++) {
-    if (predicate(as[i])) {
-      return some(i)
-    }
-  }
-  return none
-}
+export const findIndex: <A>(predicate: Predicate<A>) => (as: Array<A>) => Option<number> = RA.findIndex
 
-/**
- * Find the first element which satisfies a predicate (or a refinement) function
- */
-export function findFirst<A, B extends A>(as: Array<A>, predicate: Refinement<A, B>): Option<B>
-export function findFirst<A>(as: Array<A>, predicate: Predicate<A>): Option<A>
 /**
  * Find the first element which satisfies a predicate (or a refinement) function
  *
  * @example
- * assert.deepEqual(findFirst([{ a: 1, b: 1 }, { a: 1, b: 2 }], x => x.a === 1), some({ a: 1, b: 1 }))
+ * import { findFirst } from 'fp-ts/Array'
+ * import { some } from 'fp-ts/Option'
  *
- * @function
- * @since 1.0.0
+ * assert.deepStrictEqual(findFirst((x: { a: number, b: number }) => x.a === 1)([{ a: 1, b: 1 }, { a: 1, b: 2 }]), some({ a: 1, b: 1 }))
+ *
+ * @category destructors
+ * @since 2.0.0
  */
-export function findFirst<A>(as: Array<A>, predicate: Predicate<A>): Option<A> {
-  return fromNullable(as.find(predicate))
+export function findFirst<A, B extends A>(refinement: Refinement<A, B>): (as: Array<A>) => Option<B>
+export function findFirst<A>(predicate: Predicate<A>): (as: Array<A>) => Option<A>
+export function findFirst<A>(predicate: Predicate<A>): (as: Array<A>) => Option<A> {
+  return RA.findFirst(predicate)
 }
+
+/**
+ * Find the first element returned by an option based selector function
+ *
+ * @example
+ * import { findFirstMap } from 'fp-ts/Array'
+ * import { some, none } from 'fp-ts/Option'
+ *
+ * interface Person {
+ *   name: string
+ *   age?: number
+ * }
+ *
+ * const persons: Array<Person> = [{ name: 'John' }, { name: 'Mary', age: 45 }, { name: 'Joey', age: 28 }]
+ *
+ * // returns the name of the first person that has an age
+ * assert.deepStrictEqual(findFirstMap((p: Person) => (p.age === undefined ? none : some(p.name)))(persons), some('Mary'))
+ *
+ * @category destructors
+ * @since 2.0.0
+ */
+export const findFirstMap: <A, B>(f: (a: A) => Option<B>) => (as: Array<A>) => Option<B> = RA.findFirstMap
 
 /**
  * Find the last element which satisfies a predicate function
- * @function
- * @since 1.0.0
+ *
+ * @example
+ * import { findLast } from 'fp-ts/Array'
+ * import { some } from 'fp-ts/Option'
+ *
+ * assert.deepStrictEqual(findLast((x: { a: number, b: number }) => x.a === 1)([{ a: 1, b: 1 }, { a: 1, b: 2 }]), some({ a: 1, b: 2 }))
+ *
+ * @category destructors
+ * @since 2.0.0
  */
-export const findLast = <A>(as: Array<A>, predicate: Predicate<A>): Option<A> => {
-  const len = as.length
-  let a: A | null = null
-  for (let i = len - 1; i >= 0; i--) {
-    if (predicate(as[i])) {
-      a = as[i]
-      break
-    }
-  }
-  return fromNullable(a)
+export function findLast<A, B extends A>(refinement: Refinement<A, B>): (as: Array<A>) => Option<B>
+export function findLast<A>(predicate: Predicate<A>): (as: Array<A>) => Option<A>
+export function findLast<A>(predicate: Predicate<A>): (as: Array<A>) => Option<A> {
+  return RA.findLast(predicate)
 }
 
 /**
- * @function
- * @since 1.0.0
+ * Find the last element returned by an option based selector function
+ *
+ * @example
+ * import { findLastMap } from 'fp-ts/Array'
+ * import { some, none } from 'fp-ts/Option'
+ *
+ * interface Person {
+ *   name: string
+ *   age?: number
+ * }
+ *
+ * const persons: Array<Person> = [{ name: 'John' }, { name: 'Mary', age: 45 }, { name: 'Joey', age: 28 }]
+ *
+ * // returns the name of the last person that has an age
+ * assert.deepStrictEqual(findLastMap((p: Person) => (p.age === undefined ? none : some(p.name)))(persons), some('Joey'))
+ *
+ * @category destructors
+ * @since 2.0.0
  */
-export const refine = <A, B extends A>(as: Array<A>, refinement: Refinement<A, B>): Array<B> => {
-  return filter(as, refinement) as Array<B>
-}
+export const findLastMap: <A, B>(f: (a: A) => Option<B>) => (as: Array<A>) => Option<B> = RA.findLastMap
 
 /**
- * @function
- * @since 1.0.0
+ * Returns the index of the last element of the list which matches the predicate
+ *
+ * @example
+ * import { findLastIndex } from 'fp-ts/Array'
+ * import { some, none } from 'fp-ts/Option'
+ *
+ * interface X {
+ *   a: number
+ *   b: number
+ * }
+ * const xs: Array<X> = [{ a: 1, b: 0 }, { a: 1, b: 1 }]
+ * assert.deepStrictEqual(findLastIndex((x: { a: number }) => x.a === 1)(xs), some(1))
+ * assert.deepStrictEqual(findLastIndex((x: { a: number }) => x.a === 4)(xs), none)
+ *
+ *
+ * @since 2.0.0
  */
-export const copy = <A>(as: Array<A>): Array<A> => {
-  const l = as.length
-  const r = Array(l)
-  for (let i = 0; i < l; i++) {
-    r[i] = as[i]
-  }
-  return r
-}
+export const findLastIndex: <A>(predicate: Predicate<A>) => (as: Array<A>) => Option<number> = RA.findLastIndex
 
 /**
- * @function
- * @since 1.0.0
+ * @category combinators
+ * @since 2.0.0
  */
-export const unsafeInsertAt = <A>(i: number, a: A, as: Array<A>): Array<A> => {
-  const xs = copy(as)
-  xs.splice(i, 0, a)
-  return xs
-}
+export const copy: <A>(as: Array<A>) => Array<A> = RA.toArray
 
 /**
  * Insert an element at the specified index, creating a new array, or returning `None` if the index is out of bounds
- * @function
- * @since 1.0.0
+ *
+ * @example
+ * import { insertAt } from 'fp-ts/Array'
+ * import { some } from 'fp-ts/Option'
+ *
+ * assert.deepStrictEqual(insertAt(2, 5)([1, 2, 3, 4]), some([1, 2, 5, 3, 4]))
+ *
+ * @since 2.0.0
  */
-export const insertAt = <A>(i: number, a: A, as: Array<A>): Option<Array<A>> => {
-  return i < 0 || i > as.length ? none : some(unsafeInsertAt(i, a, as))
-}
-
-/**
- * @function
- * @since 1.0.0
- */
-export const unsafeUpdateAt = <A>(i: number, a: A, as: Array<A>): Array<A> => {
-  const xs = copy(as)
-  xs[i] = a
-  return xs
-}
+export const insertAt: <A>(i: number, a: A) => (as: Array<A>) => Option<Array<A>> = RA.insertAt as any
 
 /**
  * Change the element at the specified index, creating a new array, or returning `None` if the index is out of bounds
- * @function
- * @since 1.0.0
+ *
+ * @example
+ * import { updateAt } from 'fp-ts/Array'
+ * import { some, none } from 'fp-ts/Option'
+ *
+ * assert.deepStrictEqual(updateAt(1, 1)([1, 2, 3]), some([1, 1, 3]))
+ * assert.deepStrictEqual(updateAt(1, 1)([]), none)
+ *
+ * @since 2.0.0
  */
-export const updateAt = <A>(i: number, a: A, as: Array<A>): Option<Array<A>> => {
-  return isOutOfBound(i, as) ? none : some(unsafeUpdateAt(i, a, as))
-}
-
-/**
- * @function
- * @since 1.0.0
- */
-export const unsafeDeleteAt = <A>(i: number, as: Array<A>): Array<A> => {
-  const xs = copy(as)
-  xs.splice(i, 1)
-  return xs
-}
+export const updateAt: <A>(i: number, a: A) => (as: Array<A>) => Option<Array<A>> = RA.updateAt as any
 
 /**
  * Delete the element at the specified index, creating a new array, or returning `None` if the index is out of bounds
- * @function
- * @since 1.0.0
+ *
+ * @example
+ * import { deleteAt } from 'fp-ts/Array'
+ * import { some, none } from 'fp-ts/Option'
+ *
+ * assert.deepStrictEqual(deleteAt(0)([1, 2, 3]), some([2, 3]))
+ * assert.deepStrictEqual(deleteAt(1)([]), none)
+ *
+ * @since 2.0.0
  */
-export const deleteAt = <A>(i: number, as: Array<A>): Option<Array<A>> => {
-  return isOutOfBound(i, as) ? none : some(unsafeDeleteAt(i, as))
-}
+export const deleteAt: (i: number) => <A>(as: Array<A>) => Option<Array<A>> = RA.deleteAt as any
 
 /**
  * Apply a function to the element at the specified index, creating a new array, or returning `None` if the index is out
  * of bounds
- * @function
- * @since 1.0.0
+ *
+ * @example
+ * import { modifyAt } from 'fp-ts/Array'
+ * import { some, none } from 'fp-ts/Option'
+ *
+ * const double = (x: number): number => x * 2
+ * assert.deepStrictEqual(modifyAt(1, double)([1, 2, 3]), some([1, 4, 3]))
+ * assert.deepStrictEqual(modifyAt(1, double)([]), none)
+ *
+ * @since 2.0.0
  */
-export const modifyAt = <A>(as: Array<A>, i: number, f: Endomorphism<A>): Option<Array<A>> => {
-  return isOutOfBound(i, as) ? none : updateAt(i, f(as[i]), as)
-}
+export const modifyAt: <A>(i: number, f: (a: A) => A) => (as: Array<A>) => Option<Array<A>> = RA.modifyAt as any
 
 /**
  * Reverse an array, creating a new array
- * @function
- * @since 1.0.0
+ *
+ * @example
+ * import { reverse } from 'fp-ts/Array'
+ *
+ * assert.deepStrictEqual(reverse([1, 2, 3]), [3, 2, 1])
+ *
+ * @category combinators
+ * @since 2.0.0
  */
-export const reverse = <A>(as: Array<A>): Array<A> => {
-  return copy(as).reverse()
-}
+export const reverse: <A>(as: Array<A>) => Array<A> = RA.reverse as any
 
 /**
- * Extracts from a list of `Either` all the `Right` elements. All the `Right` elements are extracted in order
- * @function
- * @since 1.0.0
+ * Extracts from an array of `Either` all the `Right` elements. All the `Right` elements are extracted in order
+ *
+ * @example
+ * import { rights } from 'fp-ts/Array'
+ * import { right, left } from 'fp-ts/Either'
+ *
+ * assert.deepStrictEqual(rights([right(1), left('foo'), right(2)]), [1, 2])
+ *
+ * @category combinators
+ * @since 2.0.0
  */
-export const rights = <L, A>(as: Array<Either<L, A>>): Array<A> => {
-  const r: Array<A> = []
-  const len = as.length
-  for (let i = 0; i < len; i++) {
-    const a = as[i]
-    if (a.isRight()) {
-      r.push(a.value)
-    }
-  }
-  return r
-}
+export const rights: <E, A>(as: Array<Either<E, A>>) => Array<A> = RA.rights as any
 
 /**
- * Extracts from a list of `Either` all the `Left` elements. All the `Left` elements are extracted in order
- * @function
- * @since 1.0.0
+ * Extracts from an array of `Either` all the `Left` elements. All the `Left` elements are extracted in order
+ *
+ * @example
+ * import { lefts } from 'fp-ts/Array'
+ * import { left, right } from 'fp-ts/Either'
+ *
+ * assert.deepStrictEqual(lefts([right(1), left('foo'), right(2)]), ['foo'])
+ *
+ * @category combinators
+ * @since 2.0.0
  */
-export const lefts = <L, A>(as: Array<Either<L, A>>): Array<L> => {
-  const r: Array<L> = []
-  const len = as.length
-  for (let i = 0; i < len; i++) {
-    const a = as[i]
-    if (a.isLeft()) {
-      r.push(a.value)
-    }
-  }
-  return r
-}
+export const lefts: <E, A>(as: Array<Either<E, A>>) => Array<E> = RA.lefts as any
 
 /**
  * Sort the elements of an array in increasing order, creating a new array
- * @function
- * @since 1.0.0
+ *
+ * @example
+ * import { sort } from 'fp-ts/Array'
+ * import { ordNumber } from 'fp-ts/Ord'
+ *
+ * assert.deepStrictEqual(sort(ordNumber)([3, 2, 1]), [1, 2, 3])
+ *
+ * @category combinators
+ * @since 2.0.0
  */
-export const sort = <A>(O: Ord<A>) => (as: Array<A>): Array<A> => {
-  return copy(as).sort(O.compare)
-}
+export const sort: <B>(O: Ord<B>) => <A extends B>(as: Array<A>) => Array<A> = RA.sort as any
 
 /**
  * Apply a function to pairs of elements at the same index in two arrays, collecting the results in a new array. If one
  * input array is short, excess elements of the longer array are discarded.
- * @function
- * @since 1.0.0
+ *
+ * @example
+ * import { zipWith } from 'fp-ts/Array'
+ *
+ * assert.deepStrictEqual(zipWith([1, 2, 3], ['a', 'b', 'c', 'd'], (n, s) => s + n), ['a1', 'b2', 'c3'])
+ *
+ * @category combinators
+ * @since 2.0.0
  */
-export const zipWith = <A, B, C>(fa: Array<A>, fb: Array<B>, f: (a: A, b: B) => C): Array<C> => {
-  const fc = []
-  const len = Math.min(fa.length, fb.length)
-  for (let i = 0; i < len; i++) {
-    fc[i] = f(fa[i], fb[i])
-  }
-  return fc
-}
+export const zipWith: <A, B, C>(fa: Array<A>, fb: Array<B>, f: (a: A, b: B) => C) => Array<C> = RA.zipWith as any
 
+// TODO: remove non-curried overloading in v3
 /**
  * Takes two arrays and returns an array of corresponding pairs. If one input array is short, excess elements of the
  * longer array are discarded
- * @function
- * @since 1.0.0
+ *
+ * @example
+ * import { zip } from 'fp-ts/Array'
+ * import { pipe } from 'fp-ts/function'
+ *
+ * assert.deepStrictEqual(pipe([1, 2, 3], zip(['a', 'b', 'c', 'd'])), [[1, 'a'], [2, 'b'], [3, 'c']])
+ *
+ * @category combinators
+ * @since 2.0.0
  */
-export const zip = <A, B>(fa: Array<A>, fb: Array<B>): Array<[A, B]> => {
-  return zipWith(fa, fb, tuple)
-}
+export const zip: {
+  <B>(bs: Array<B>): <A>(as: Array<A>) => Array<[A, B]>
+  <A, B>(as: Array<A>, bs: Array<B>): Array<[A, B]>
+} = RA.zip as any
+
+/**
+ * The function is reverse of `zip`. Takes an array of pairs and return two corresponding arrays
+ *
+ * @example
+ * import { unzip } from 'fp-ts/Array'
+ *
+ * assert.deepStrictEqual(unzip([[1, 'a'], [2, 'b'], [3, 'c']]), [[1, 2, 3], ['a', 'b', 'c']])
+ *
+ * @since 2.0.0
+ */
+export const unzip: <A, B>(as: Array<[A, B]>) => [Array<A>, Array<B>] = RA.unzip as any
+
+/**
+ * Prepend an element to every member of an array
+ *
+ * @example
+ * import { prependToAll } from 'fp-ts/Array'
+ *
+ * assert.deepStrictEqual(prependToAll(9)([1, 2, 3, 4]), [9, 1, 9, 2, 9, 3, 9, 4])
+ *
+ * @category combinators
+ * @since 2.9.0
+ */
+export const prependToAll: <A>(e: A) => (xs: Array<A>) => Array<A> = RA.prependToAll as any
+
+/**
+ * Places an element in between members of an array
+ *
+ * @example
+ * import { intersperse } from 'fp-ts/Array'
+ *
+ * assert.deepStrictEqual(intersperse(9)([1, 2, 3, 4]), [1, 9, 2, 9, 3, 9, 4])
+ *
+ * @category combinators
+ * @since 2.9.0
+ */
+export const intersperse: <A>(e: A) => (as: Array<A>) => Array<A> = RA.intersperse as any
 
 /**
  * Rotate an array to the right by `n` steps
- * @function
- * @since 1.0.0
+ *
+ * @example
+ * import { rotate } from 'fp-ts/Array'
+ *
+ * assert.deepStrictEqual(rotate(2)([1, 2, 3, 4, 5]), [4, 5, 1, 2, 3])
+ *
+ * @category combinators
+ * @since 2.0.0
  */
-export const rotate = <A>(n: number, xs: Array<A>): Array<A> => {
-  const len = xs.length
-  if (n === 0 || len <= 1 || len === Math.abs(n)) {
-    return xs
-  } else if (n < 0) {
-    return rotate(len + n, xs)
-  } else {
-    return xs.slice(-n).concat(xs.slice(0, len - n))
-  }
-}
+export const rotate: (n: number) => <A>(as: Array<A>) => Array<A> = RA.rotate as any
+
+// TODO: remove non-curried overloading in v3
+/**
+ * Test if a value is a member of an array. Takes a `Eq<A>` as a single
+ * argument which returns the function to use to search for a value of type `A` in
+ * an array of type `Array<A>`.
+ *
+ * @example
+ * import { elem } from 'fp-ts/Array'
+ * import { eqNumber } from 'fp-ts/Eq'
+ * import { pipe } from 'fp-ts/function'
+ *
+ * assert.strictEqual(pipe([1, 2, 3], elem(eqNumber)(2)), true)
+ * assert.strictEqual(pipe([1, 2, 3], elem(eqNumber)(0)), false)
+ *
+ * @since 2.0.0
+ */
+export const elem: <A>(
+  E: Eq<A>
+) => {
+  (a: A): (as: Array<A>) => boolean
+  (a: A, as: Array<A>): boolean
+} = RA.elem
 
 /**
- * Test if a value is a member of an array
- * @function
- * @since 1.3.0
+ * Remove duplicates from an array, keeping the first occurrence of an element.
+ *
+ * @example
+ * import { uniq } from 'fp-ts/Array'
+ * import { eqNumber } from 'fp-ts/Eq'
+ *
+ * assert.deepStrictEqual(uniq(eqNumber)([1, 2, 1]), [1, 2])
+ *
+ * @category combinators
+ * @since 2.0.0
  */
-export const member = <A>(S: Setoid<A>) => (as: Array<A>, a: A): boolean => {
-  const predicate = (e: A) => S.equals(e, a)
-  let i = 0
-  const len = as.length
-  for (; i < len; i++) {
-    if (predicate(as[i])) {
-      return true
-    }
-  }
-  return false
-}
-
-/**
- * Remove duplicates from an array, keeping the first occurance of an element.
- * @function
- * @since 1.3.0
- */
-export const uniq = <A>(S: Setoid<A>): ((as: Array<A>) => Array<A>) => {
-  const memberS = member(S)
-  return as => {
-    const r: Array<A> = []
-    const len = as.length
-    let i = 0
-    for (; i < len; i++) {
-      const a = as[i]
-      if (!memberS(r, a)) {
-        r.push(a)
-      }
-    }
-    return len === r.length ? as : r
-  }
-}
+export const uniq: <A>(E: Eq<A>) => (as: Array<A>) => Array<A> = RA.uniq as any
 
 /**
  * Sort the elements of an array in increasing order, where elements are compared using first `ords[0]`, then `ords[1]`,
  * etc...
- * @function
- * @since 1.3.0
+ *
+ * @example
+ * import { sortBy } from 'fp-ts/Array'
+ * import { ord, ordString, ordNumber } from 'fp-ts/Ord'
+ *
+ * interface Person {
+ *   name: string
+ *   age: number
+ * }
+ * const byName = ord.contramap(ordString, (p: Person) => p.name)
+ * const byAge = ord.contramap(ordNumber, (p: Person) => p.age)
+ *
+ * const sortByNameByAge = sortBy([byName, byAge])
+ *
+ * const persons = [{ name: 'a', age: 1 }, { name: 'b', age: 3 }, { name: 'c', age: 2 }, { name: 'b', age: 2 }]
+ * assert.deepStrictEqual(sortByNameByAge(persons), [
+ *   { name: 'a', age: 1 },
+ *   { name: 'b', age: 2 },
+ *   { name: 'b', age: 3 },
+ *   { name: 'c', age: 2 }
+ * ])
+ *
+ * @category combinators
+ * @since 2.0.0
  */
-export const sortBy = <A>(ords: Array<Ord<A>>): Option<Endomorphism<Array<A>>> => {
-  return fold(ords, none, (head, tail) => some(sortBy1(head, tail)))
+export const sortBy: <B>(ords: Array<Ord<B>>) => <A extends B>(as: Array<A>) => Array<A> = RA.sortBy as any
+
+/**
+ * A useful recursion pattern for processing an array to produce a new array, often used for "chopping" up the input
+ * array. Typically chop is called with some function that will consume an initial prefix of the array and produce a
+ * value and the rest of the array.
+ *
+ * @example
+ * import { Eq, eqNumber } from 'fp-ts/Eq'
+ * import { chop, spanLeft } from 'fp-ts/Array'
+ *
+ * const group = <A>(S: Eq<A>): ((as: Array<A>) => Array<Array<A>>) => {
+ *   return chop(as => {
+ *     const { init, rest } = spanLeft((a: A) => S.equals(a, as[0]))(as)
+ *     return [init, rest]
+ *   })
+ * }
+ * assert.deepStrictEqual(group(eqNumber)([1, 1, 2, 3, 3, 4]), [[1, 1], [2], [3, 3], [4]])
+ *
+ * @category combinators
+ * @since 2.0.0
+ */
+export const chop: <A, B>(f: (as: NonEmptyArray<A>) => [B, Array<A>]) => (as: Array<A>) => Array<B> = RA.chop as any
+
+/**
+ * Splits an array into two pieces, the first piece has `n` elements.
+ *
+ * @example
+ * import { splitAt } from 'fp-ts/Array'
+ *
+ * assert.deepStrictEqual(splitAt(2)([1, 2, 3, 4, 5]), [[1, 2], [3, 4, 5]])
+ *
+ * @since 2.0.0
+ */
+export const splitAt: (n: number) => <A>(as: Array<A>) => [Array<A>, Array<A>] = RA.splitAt as any
+
+/**
+ * Splits an array into length-`n` pieces. The last piece will be shorter if `n` does not evenly divide the length of
+ * the array. Note that `chunksOf(n)([])` is `[]`, not `[[]]`. This is intentional, and is consistent with a recursive
+ * definition of `chunksOf`; it satisfies the property that
+ *
+ * ```ts
+ * chunksOf(n)(xs).concat(chunksOf(n)(ys)) == chunksOf(n)(xs.concat(ys)))
+ * ```
+ *
+ * whenever `n` evenly divides the length of `xs`.
+ *
+ * @example
+ * import { chunksOf } from 'fp-ts/Array'
+ *
+ * assert.deepStrictEqual(chunksOf(2)([1, 2, 3, 4, 5]), [[1, 2], [3, 4], [5]])
+ *
+ * @since 2.0.0
+ */
+export const chunksOf: (n: number) => <A>(as: Array<A>) => Array<Array<A>> = RA.chunksOf as any
+
+/**
+ * Array comprehension
+ *
+ * ```
+ * [ f(x, y, ...) | x ← xs, y ← ys, ..., g(x, y, ...) ]
+ * ```
+ *
+ * @example
+ * import { comprehension } from 'fp-ts/Array'
+ * import { tuple } from 'fp-ts/function'
+ *
+ * assert.deepStrictEqual(comprehension([[1, 2, 3], ['a', 'b']], tuple, (a, b) => (a + b.length) % 2 === 0), [
+ *   [1, 'a'],
+ *   [1, 'b'],
+ *   [3, 'a'],
+ *   [3, 'b']
+ * ])
+ *
+ * @category constructors
+ * @since 2.0.0
+ */
+export function comprehension<A, B, C, D, R>(
+  input: [Array<A>, Array<B>, Array<C>, Array<D>],
+  f: (a: A, b: B, c: C, d: D) => R,
+  g?: (a: A, b: B, c: C, d: D) => boolean
+): Array<R>
+export function comprehension<A, B, C, R>(
+  input: [Array<A>, Array<B>, Array<C>],
+  f: (a: A, b: B, c: C) => R,
+  g?: (a: A, b: B, c: C) => boolean
+): Array<R>
+export function comprehension<A, R>(input: [Array<A>], f: (a: A) => R, g?: (a: A) => boolean): Array<R>
+export function comprehension<A, B, R>(
+  input: [Array<A>, Array<B>],
+  f: (a: A, b: B) => R,
+  g?: (a: A, b: B) => boolean
+): Array<R>
+export function comprehension<A, R>(input: [Array<A>], f: (a: A) => boolean, g?: (a: A) => R): Array<R>
+export function comprehension<R>(
+  input: Array<Array<any>>,
+  f: (...xs: Array<any>) => R,
+  g: (...xs: Array<any>) => boolean = () => true
+): Array<R> {
+  return RA.comprehension(input as any, f, g) as any
+}
+
+// TODO: remove non-curried overloading in v3
+/**
+ * Creates an array of unique values, in order, from all given arrays using a `Eq` for equality comparisons
+ *
+ * @example
+ * import { union } from 'fp-ts/Array'
+ * import { eqNumber } from 'fp-ts/Eq'
+ * import { pipe } from 'fp-ts/function'
+ *
+ * assert.deepStrictEqual(pipe([1, 2], union(eqNumber)([2, 3])), [1, 2, 3])
+ *
+ * @category combinators
+ * @since 2.0.0
+ */
+export const union: <A>(
+  E: Eq<A>
+) => {
+  (xs: Array<A>): (ys: Array<A>) => Array<A>
+  (xs: Array<A>, ys: Array<A>): Array<A>
+} = RA.union as any
+
+// TODO: remove non-curried overloading in v3
+/**
+ * Creates an array of unique values that are included in all given arrays using a `Eq` for equality
+ * comparisons. The order and references of result values are determined by the first array.
+ *
+ * @example
+ * import { intersection } from 'fp-ts/Array'
+ * import { eqNumber } from 'fp-ts/Eq'
+ * import { pipe } from 'fp-ts/function'
+ *
+ * assert.deepStrictEqual(pipe([1, 2], intersection(eqNumber)([2, 3])), [2])
+ *
+ * @category combinators
+ * @since 2.0.0
+ */
+export const intersection: <A>(
+  E: Eq<A>
+) => {
+  (xs: Array<A>): (ys: Array<A>) => Array<A>
+  (xs: Array<A>, ys: Array<A>): Array<A>
+} = RA.intersection as any
+
+// TODO: remove non-curried overloading in v3
+/**
+ * Creates an array of array values not included in the other given array using a `Eq` for equality
+ * comparisons. The order and references of result values are determined by the first array.
+ *
+ * @example
+ * import { difference } from 'fp-ts/Array'
+ * import { eqNumber } from 'fp-ts/Eq'
+ * import { pipe } from 'fp-ts/function'
+ *
+ * assert.deepStrictEqual(pipe([1, 2], difference(eqNumber)([2, 3])), [1])
+ *
+ * @category combinators
+ * @since 2.0.0
+ */
+export const difference: <A>(
+  E: Eq<A>
+) => {
+  (xs: Array<A>): (ys: Array<A>) => Array<A>
+  (xs: Array<A>, ys: Array<A>): Array<A>
+} = RA.difference as any
+
+/**
+ * Wrap a value into the type constructor.
+ *
+ * @category Applicative
+ * @since 2.0.0
+ */
+export const of: Applicative1<URI>['of'] = RA.of as any
+
+// -------------------------------------------------------------------------------------
+// non-pipeables
+// -------------------------------------------------------------------------------------
+
+const map_: Monad1<URI>['map'] = RA.Monad.map as any
+const ap_: Monad1<URI>['ap'] = RA.Monad.ap as any
+const chain_: Monad1<URI>['chain'] = RA.Monad.chain as any
+const mapWithIndex_: FunctorWithIndex1<URI, number>['mapWithIndex'] = RA.FunctorWithIndex.mapWithIndex as any
+const filter_: Filterable1<URI>['filter'] = RA.Filterable.filter as any
+const filterMap_: Filterable1<URI>['filterMap'] = RA.Filterable.filterMap as any
+const partition_: Filterable1<URI>['partition'] = RA.Filterable.partition as any
+const partitionMap_: Filterable1<URI>['partitionMap'] = RA.Filterable.partitionMap as any
+const filterWithIndex_: FilterableWithIndex1<URI, number>['filterWithIndex'] = RA.FilterableWithIndex
+  .filterWithIndex as any
+const filterMapWithIndex_: FilterableWithIndex1<URI, number>['filterMapWithIndex'] = RA.FilterableWithIndex
+  .filterMapWithIndex as any
+const partitionWithIndex_: FilterableWithIndex1<URI, number>['partitionWithIndex'] = RA.FilterableWithIndex
+  .partitionWithIndex as any
+const partitionMapWithIndex_: FilterableWithIndex1<URI, number>['partitionMapWithIndex'] = RA.FilterableWithIndex
+  .partitionMapWithIndex as any
+const reduce_: Foldable1<URI>['reduce'] = RA.Foldable.reduce
+const foldMap_: Foldable1<URI>['foldMap'] = RA.Foldable.foldMap
+const reduceRight_: Foldable1<URI>['reduceRight'] = RA.Foldable.reduceRight
+const traverse_: Traversable1<URI>['traverse'] = RA.Traversable.traverse as any
+const alt_: Alternative1<URI>['alt'] = RA.Alternative.alt as any
+const reduceWithIndex_: FoldableWithIndex1<URI, number>['reduceWithIndex'] = RA.FoldableWithIndex.reduceWithIndex
+const foldMapWithIndex_: FoldableWithIndex1<URI, number>['foldMapWithIndex'] = RA.FoldableWithIndex.foldMapWithIndex
+const reduceRightWithIndex_: FoldableWithIndex1<URI, number>['reduceRightWithIndex'] =
+  RA.FoldableWithIndex.reduceRightWithIndex
+const traverseWithIndex_: TraversableWithIndex1<URI, number>['traverseWithIndex'] = RA.TraversableWithIndex
+  .traverseWithIndex as any
+const extend_: Extend1<URI>['extend'] = RA.Extend.extend as any
+const wither_: Witherable1<URI>['wither'] = RA.Witherable.wither as any
+const wilt_: Witherable1<URI>['wilt'] = RA.Witherable.wilt as any
+
+// -------------------------------------------------------------------------------------
+// pipeables
+// -------------------------------------------------------------------------------------
+
+/**
+ * `map` can be used to turn functions `(a: A) => B` into functions `(fa: F<A>) => F<B>` whose argument and return types
+ * use the type constructor `F` to represent some computational context.
+ *
+ * @category Functor
+ * @since 2.0.0
+ */
+export const map: <A, B>(f: (a: A) => B) => (fa: Array<A>) => Array<B> = RA.map as any
+
+/**
+ * Apply a function to an argument under a type constructor.
+ *
+ * @category Apply
+ * @since 2.0.0
+ */
+export const ap: <A>(fa: Array<A>) => <B>(fab: Array<(a: A) => B>) => Array<B> = RA.ap as any
+
+/**
+ * Combine two effectful actions, keeping only the result of the first.
+ *
+ * Derivable from `Apply`.
+ *
+ * @category combinators
+ * @since 2.0.0
+ */
+export const apFirst: <B>(fb: Array<B>) => <A>(fa: Array<A>) => Array<A> = RA.apFirst as any
+
+/**
+ * Combine two effectful actions, keeping only the result of the second.
+ *
+ * Derivable from `Apply`.
+ *
+ * @category combinators
+ * @since 2.0.0
+ */
+export const apSecond: <B>(fb: Array<B>) => <A>(fa: Array<A>) => Array<B> = RA.apSecond as any
+
+/**
+ * Composes computations in sequence, using the return value of one computation to determine the next computation.
+ *
+ * @category Monad
+ * @since 2.0.0
+ */
+export const chain: <A, B>(f: (a: A) => Array<B>) => (ma: Array<A>) => Array<B> = RA.chain as any
+
+/**
+ * @since 2.7.0
+ */
+export const chainWithIndex: <A, B>(
+  f: (index: number, a: A) => Array<B>
+) => (ma: Array<A>) => Array<B> = RA.chainWithIndex as any
+
+/**
+ * Composes computations in sequence, using the return value of one computation to determine the next computation and
+ * keeping only the result of the first.
+ *
+ * Derivable from `Monad`.
+ *
+ * @category combinators
+ * @since 2.0.0
+ */
+export const chainFirst: <A, B>(f: (a: A) => Array<B>) => (ma: Array<A>) => Array<A> = RA.chainFirst as any
+
+/**
+ * @category FunctorWithIndex
+ * @since 2.0.0
+ */
+export const mapWithIndex: <A, B>(f: (i: number, a: A) => B) => (fa: Array<A>) => Array<B> = RA.mapWithIndex as any
+
+/**
+ * @category Compactable
+ * @since 2.0.0
+ */
+export const compact: <A>(fa: Array<Option<A>>) => Array<A> = RA.compact as any
+
+/**
+ * @category Compactable
+ * @since 2.0.0
+ */
+export const separate: <A, B>(fa: Array<Either<A, B>>) => Separated<Array<A>, Array<B>> = RA.separate as any
+
+/**
+ * @category Filterable
+ * @since 2.0.0
+ */
+export const filter: {
+  <A, B extends A>(refinement: Refinement<A, B>): (fa: Array<A>) => Array<B>
+  <A>(predicate: Predicate<A>): (fa: Array<A>) => Array<A>
+} = RA.filter as any
+
+/**
+ * @category Filterable
+ * @since 2.0.0
+ */
+export const filterMap: <A, B>(f: (a: A) => Option<B>) => (fa: Array<A>) => Array<B> = RA.filterMap as any
+
+/**
+ * @category Filterable
+ * @since 2.0.0
+ */
+export const partition: {
+  <A, B extends A>(refinement: Refinement<A, B>): (fa: Array<A>) => Separated<Array<A>, Array<B>>
+  <A>(predicate: Predicate<A>): (fa: Array<A>) => Separated<Array<A>, Array<A>>
+} = RA.partition as any
+
+/**
+ * @category FilterableWithIndex
+ * @since 2.0.0
+ */
+export const partitionWithIndex: {
+  <A, B extends A>(refinementWithIndex: RefinementWithIndex<number, A, B>): (
+    fa: Array<A>
+  ) => Separated<Array<A>, Array<B>>
+  <A>(predicateWithIndex: PredicateWithIndex<number, A>): (fa: Array<A>) => Separated<Array<A>, Array<A>>
+} = RA.partitionWithIndex as any
+
+/**
+ * @category Filterable
+ * @since 2.0.0
+ */
+export const partitionMap: <A, B, C>(
+  f: (a: A) => Either<B, C>
+) => (fa: Array<A>) => Separated<Array<B>, Array<C>> = RA.partitionMap as any
+
+/**
+ * @category FilterableWithIndex
+ * @since 2.0.0
+ */
+export const partitionMapWithIndex: <A, B, C>(
+  f: (i: number, a: A) => Either<B, C>
+) => (fa: Array<A>) => Separated<Array<B>, Array<C>> = RA.partitionMapWithIndex as any
+
+/**
+ * Less strict version of [`alt`](#alt).
+ *
+ * @category Alt
+ * @since 2.9.0
+ */
+export const altW: <B>(that: Lazy<Array<B>>) => <A>(fa: Array<A>) => Array<A | B> = RA.altW as any
+
+/**
+ * Identifies an associative operation on a type constructor. It is similar to `Semigroup`, except that it applies to
+ * types of kind `* -> *`.
+ *
+ * @category Alt
+ * @since 2.0.0
+ */
+export const alt: <A>(that: Lazy<Array<A>>) => (fa: Array<A>) => Array<A> = RA.alt as any
+
+/**
+ * @category FilterableWithIndex
+ * @since 2.0.0
+ */
+export const filterMapWithIndex: <A, B>(
+  f: (i: number, a: A) => Option<B>
+) => (fa: Array<A>) => Array<B> = RA.filterMapWithIndex as any
+
+/**
+ * @category FilterableWithIndex
+ * @since 2.0.0
+ */
+export const filterWithIndex: {
+  <A, B extends A>(refinementWithIndex: RefinementWithIndex<number, A, B>): (fa: Array<A>) => Array<B>
+  <A>(predicateWithIndex: PredicateWithIndex<number, A>): (fa: Array<A>) => Array<A>
+} = RA.filterWithIndex as any
+
+/**
+ * @category Extend
+ * @since 2.0.0
+ */
+export const extend: <A, B>(f: (fa: Array<A>) => B) => (wa: Array<A>) => Array<B> = RA.extend as any
+
+/**
+ * Derivable from `Extend`.
+ *
+ * @category combinators
+ * @since 2.0.0
+ */
+export const duplicate: <A>(wa: Array<A>) => Array<Array<A>> = RA.duplicate as any
+
+/**
+ * @category Foldable
+ * @since 2.0.0
+ */
+export const foldMap: <M>(M: Monoid<M>) => <A>(f: (a: A) => M) => (fa: Array<A>) => M = RA.foldMap
+
+/**
+ * @category FoldableWithIndex
+ * @since 2.0.0
+ */
+export const foldMapWithIndex: <M>(M: Monoid<M>) => <A>(f: (i: number, a: A) => M) => (fa: Array<A>) => M =
+  RA.foldMapWithIndex
+
+/**
+ * @category Foldable
+ * @since 2.0.0
+ */
+export const reduce: <A, B>(b: B, f: (b: B, a: A) => B) => (fa: Array<A>) => B = RA.reduce
+
+/**
+ * @category FoldableWithIndex
+ * @since 2.0.0
+ */
+export const reduceWithIndex: <A, B>(b: B, f: (i: number, b: B, a: A) => B) => (fa: Array<A>) => B = RA.reduceWithIndex
+
+/**
+ * @category Foldable
+ * @since 2.0.0
+ */
+export const reduceRight: <A, B>(b: B, f: (a: A, b: B) => B) => (fa: Array<A>) => B = RA.reduceRight
+
+/**
+ * @category FoldableWithIndex
+ * @since 2.0.0
+ */
+export const reduceRightWithIndex: <A, B>(b: B, f: (i: number, a: A, b: B) => B) => (fa: Array<A>) => B =
+  RA.reduceRightWithIndex
+
+/**
+ * **for optimized and stack safe version check the data types `traverseArray` function**
+ * @category Traversable
+ * @since 2.6.3
+ */
+export const traverse: PipeableTraverse1<URI> = RA.traverse as any
+
+/**
+ * **for optimized and stack safe version check the data types `sequenceArray` function**
+ * @category Traversable
+ * @since 2.6.3
+ */
+export const sequence: Traversable1<URI>['sequence'] = RA.sequence as any
+
+/**
+ * **for optimized and stack safe version check the data types `traverseArrayWithIndex` function**
+ * @category TraversableWithIndex
+ * @since 2.6.3
+ */
+export const traverseWithIndex: PipeableTraverseWithIndex1<URI, number> = RA.traverseWithIndex as any
+
+/**
+ * @category Witherable
+ * @since 2.6.5
+ */
+export const wither: PipeableWither1<URI> = RA.wither as any
+
+/**
+ * @category Witherable
+ * @since 2.6.5
+ */
+export const wilt: PipeableWilt1<URI> = RA.wilt as any
+
+/**
+ * @category Unfoldable
+ * @since 2.6.6
+ */
+export const unfold: Unfoldable1<URI>['unfold'] = RA.unfold as any
+
+/**
+ * @category Alternative
+ * @since 2.7.0
+ */
+export const zero: Alternative1<URI>['zero'] = RA.Alternative.zero as any
+
+// -------------------------------------------------------------------------------------
+// instances
+// -------------------------------------------------------------------------------------
+
+/**
+ * @category instances
+ * @since 2.0.0
+ */
+export const URI = 'Array'
+
+/**
+ * @category instances
+ * @since 2.0.0
+ */
+export type URI = typeof URI
+
+declare module './HKT' {
+  interface URItoKind<A> {
+    readonly [URI]: Array<A>
+  }
 }
 
 /**
- * Non failing version of {@link sortBy}
- * @function
- * @since 1.3.0
+ * @category instances
+ * @since 2.7.0
  */
-export const sortBy1 = <A>(head: Ord<A>, tail: Array<Ord<A>>): Endomorphism<Array<A>> => {
-  return sort(tail.reduce(getSemigroup<A>().concat, head))
-}
-
-/**
- * Apply a function to each element in an array, keeping only the results which contain a value, creating a new array.
- * Alias of {@link Filterable}'s `filterMap`
- * @function
- * @since 1.0.0
- */
-export const mapOption = <A, B>(as: Array<A>, f: (a: A) => Option<B>): Array<B> => {
-  const result: Array<B> = []
-  for (const a of as) {
-    const optionB = f(a)
-    if (optionB.isSome()) {
-      result.push(optionB.value)
-    }
-  }
-  return result
-}
-
-/**
- * Filter an array of optional values, keeping only the elements which contain a value, creating a new array
- * Alias of {@link Compactable}'s `compact`
- * @function
- * @since 1.0.0
- */
-export const catOptions = <A>(as: Array<Option<A>>): Array<A> => {
-  return mapOption(as, identity)
-}
-
-/**
- * @function
- * @since 1.0.0
- */
-export const partitionMap = <A, L, R>(fa: Array<A>, f: (a: A) => Either<L, R>): Separated<Array<L>, Array<R>> => {
-  const left: Array<L> = []
-  const right: Array<R> = []
-  for (const a of fa) {
-    const e = f(a)
-    if (e.isLeft()) {
-      left.push(e.value)
-    } else {
-      right.push(e.value)
-    }
-  }
-  return {
-    left,
-    right
-  }
-}
-/**
- * Filter an array, keeping the elements which satisfy a predicate function, creating a new array
- * @function
- * @since 1.0.0
- */
-export const filter = <A>(as: Array<A>, predicate: Predicate<A>): Array<A> => {
-  return as.filter(predicate)
-}
-
-const partition = <A>(fa: Array<A>, p: Predicate<A>): Separated<Array<A>, Array<A>> => {
-  const left: Array<A> = []
-  const right: Array<A> = []
-  for (const a of fa) {
-    if (p(a)) {
-      right.push(a)
-    } else {
-      left.push(a)
-    }
-  }
-  return {
-    left,
-    right
-  }
-}
-
-const compact = catOptions
-
-const separate = <RL, RR>(fa: Array<Either<RL, RR>>): Separated<Array<RL>, Array<RR>> => {
-  const left: Array<RL> = []
-  const right: Array<RR> = []
-  for (const e of fa) {
-    if (e.isLeft()) {
-      left.push(e.value)
-    } else {
-      right.push(e.value)
-    }
-  }
-  return {
-    left,
-    right
-  }
-}
-
-const filterMap = mapOption
-
-const wither = <F>(F: Applicative<F>): (<A, B>(ta: Array<A>, f: (a: A) => HKT<F, Option<B>>) => HKT<F, Array<B>>) => {
-  const traverseF = traverse(F)
-  return (wa, f) => F.map(traverseF(wa, f), compact)
-}
-
-const wilt = <F>(
-  F: Applicative<F>
-): (<RL, RR, A>(wa: Array<A>, f: (a: A) => HKT<F, Either<RL, RR>>) => HKT<F, Separated<Array<RL>, Array<RR>>>) => {
-  const traverseF = traverse(F)
-  return (wa, f) => F.map(traverseF(wa, f), separate)
-}
-
-export const array: Monad1<URI> &
-  Foldable1<URI> &
-  Unfoldable1<URI> &
-  Traversable1<URI> &
-  Alternative1<URI> &
-  Plus1<URI> &
-  Extend1<URI> &
-  Compactable1<URI> &
-  Filterable1<URI> &
-  Witherable1<URI> = {
+export const Functor: Functor1<URI> = {
   URI,
-  map,
+  map: map_
+}
+
+/**
+ * @category instances
+ * @since 2.7.0
+ */
+export const FunctorWithIndex: FunctorWithIndex1<URI, number> = {
+  URI,
+  map: map_,
+  mapWithIndex: mapWithIndex_
+}
+
+/**
+ * @category instances
+ * @since 2.7.0
+ */
+export const Applicative: Applicative1<URI> = {
+  URI,
+  map: map_,
+  ap: ap_,
+  of
+}
+
+/**
+ * @category instances
+ * @since 2.7.0
+ */
+export const Monad: Monad1<URI> = {
+  URI,
+  map: map_,
+  ap: ap_,
+  of,
+  chain: chain_
+}
+
+/**
+ * @category instances
+ * @since 2.7.0
+ */
+export const Unfoldable: Unfoldable1<URI> = {
+  URI,
+  unfold
+}
+
+/**
+ * @category instances
+ * @since 2.7.0
+ */
+export const Alt: Alt1<URI> = {
+  URI,
+  map: map_,
+  alt: alt_
+}
+
+/**
+ * @category instances
+ * @since 2.7.0
+ */
+export const Alternative: Alternative1<URI> = {
+  URI,
+  map: map_,
+  ap: ap_,
+  of,
+  alt: alt_,
+  zero
+}
+
+/**
+ * @category instances
+ * @since 2.7.0
+ */
+export const Extend: Extend1<URI> = {
+  URI,
+  map: map_,
+  extend: extend_
+}
+
+/**
+ * @category instances
+ * @since 2.7.0
+ */
+export const Compactable: Compactable1<URI> = {
+  URI,
+  compact,
+  separate
+}
+
+/**
+ * @category instances
+ * @since 2.7.0
+ */
+export const Filterable: Filterable1<URI> = {
+  URI,
+  map: map_,
   compact,
   separate,
-  filter,
-  filterMap,
-  partition,
-  partitionMap,
-  of,
-  ap,
-  chain,
-  reduce,
-  unfoldr,
-  traverse,
-  zero,
-  alt,
-  extend,
-  wither,
-  wilt
+  filter: filter_,
+  filterMap: filterMap_,
+  partition: partition_,
+  partitionMap: partitionMap_
 }
+
+/**
+ * @category instances
+ * @since 2.7.0
+ */
+export const FilterableWithIndex: FilterableWithIndex1<URI, number> = {
+  URI,
+  map: map_,
+  mapWithIndex: mapWithIndex_,
+  compact,
+  separate,
+  filter: filter_,
+  filterMap: filterMap_,
+  partition: partition_,
+  partitionMap: partitionMap_,
+  partitionMapWithIndex: partitionMapWithIndex_,
+  partitionWithIndex: partitionWithIndex_,
+  filterMapWithIndex: filterMapWithIndex_,
+  filterWithIndex: filterWithIndex_
+}
+
+/**
+ * @category instances
+ * @since 2.7.0
+ */
+export const Foldable: Foldable1<URI> = {
+  URI,
+  reduce: reduce_,
+  foldMap: foldMap_,
+  reduceRight: reduceRight_
+}
+
+/**
+ * @category instances
+ * @since 2.7.0
+ */
+export const FoldableWithIndex: FoldableWithIndex1<URI, number> = {
+  URI,
+  reduce: reduce_,
+  foldMap: foldMap_,
+  reduceRight: reduceRight_,
+  reduceWithIndex: reduceWithIndex_,
+  foldMapWithIndex: foldMapWithIndex_,
+  reduceRightWithIndex: reduceRightWithIndex_
+}
+
+/**
+ * @category instances
+ * @since 2.7.0
+ */
+export const Traversable: Traversable1<URI> = {
+  URI,
+  map: map_,
+  reduce: reduce_,
+  foldMap: foldMap_,
+  reduceRight: reduceRight_,
+  traverse: traverse_,
+  sequence
+}
+
+/**
+ * @category instances
+ * @since 2.7.0
+ */
+export const TraversableWithIndex: TraversableWithIndex1<URI, number> = {
+  URI,
+  map: map_,
+  mapWithIndex: mapWithIndex_,
+  reduce: reduce_,
+  foldMap: foldMap_,
+  reduceRight: reduceRight_,
+  reduceWithIndex: reduceWithIndex_,
+  foldMapWithIndex: foldMapWithIndex_,
+  reduceRightWithIndex: reduceRightWithIndex_,
+  traverse: traverse_,
+  sequence,
+  traverseWithIndex: traverseWithIndex_
+}
+
+/**
+ * @category instances
+ * @since 2.7.0
+ */
+export const Witherable: Witherable1<URI> = {
+  URI,
+  map: map_,
+  compact,
+  separate,
+  filter: filter_,
+  filterMap: filterMap_,
+  partition: partition_,
+  partitionMap: partitionMap_,
+  reduce: reduce_,
+  foldMap: foldMap_,
+  reduceRight: reduceRight_,
+  traverse: traverse_,
+  sequence,
+  wither: wither_,
+  wilt: wilt_
+}
+
+// TODO: remove in v3
+/**
+ * @category instances
+ * @since 2.0.0
+ */
+export const array: FunctorWithIndex1<URI, number> &
+  Monad1<URI> &
+  Unfoldable1<URI> &
+  Alternative1<URI> &
+  Extend1<URI> &
+  FilterableWithIndex1<URI, number> &
+  FoldableWithIndex1<URI, number> &
+  TraversableWithIndex1<URI, number> &
+  Witherable1<URI> = {
+  URI,
+  compact,
+  separate,
+  map: map_,
+  ap: ap_,
+  of,
+  chain: chain_,
+  filter: filter_,
+  filterMap: filterMap_,
+  partition: partition_,
+  partitionMap: partitionMap_,
+  mapWithIndex: mapWithIndex_,
+  partitionMapWithIndex: partitionMapWithIndex_,
+  partitionWithIndex: partitionWithIndex_,
+  filterMapWithIndex: filterMapWithIndex_,
+  filterWithIndex: filterWithIndex_,
+  alt: alt_,
+  zero,
+  unfold,
+  reduce: reduce_,
+  foldMap: foldMap_,
+  reduceRight: reduceRight_,
+  traverse: traverse_,
+  sequence,
+  reduceWithIndex: reduceWithIndex_,
+  foldMapWithIndex: foldMapWithIndex_,
+  reduceRightWithIndex: reduceRightWithIndex_,
+  traverseWithIndex: traverseWithIndex_,
+  extend: extend_,
+  wither: wither_,
+  wilt: wilt_
+}
+
+// -------------------------------------------------------------------------------------
+// unsafe
+// -------------------------------------------------------------------------------------
+
+/**
+ * @category unsafe
+ * @since 2.0.0
+ */
+export const unsafeInsertAt: <A>(i: number, a: A, as: Array<A>) => Array<A> = RA.unsafeInsertAt as any
+
+/**
+ * @category unsafe
+ * @since 2.0.0
+ */
+export const unsafeUpdateAt: <A>(i: number, a: A, as: Array<A>) => Array<A> = RA.unsafeUpdateAt as any
+
+/**
+ * @category unsafe
+ * @since 2.0.0
+ */
+export const unsafeDeleteAt: <A>(i: number, as: Array<A>) => Array<A> = RA.unsafeDeleteAt as any
+
+// -------------------------------------------------------------------------------------
+// utils
+// -------------------------------------------------------------------------------------
+
+/**
+ * An empty array
+ *
+ * @since 2.0.0
+ */
+export const empty: Array<never> = []
+
+/**
+ * @since 2.9.0
+ */
+export const every: <A>(predicate: Predicate<A>) => (as: Array<A>) => boolean = RA.every
+
+/**
+ * @since 2.9.0
+ */
+export const some: <A>(predicate: Predicate<A>) => (as: Array<A>) => boolean = RA.some
+
+// -------------------------------------------------------------------------------------
+// do notation
+// -------------------------------------------------------------------------------------
+
+/**
+ * @since 2.9.0
+ */
+export const Do: Array<{}> =
+  /*#__PURE__*/
+  of({})
+
+/**
+ * @since 2.8.0
+ */
+export const bindTo: <N extends string>(name: N) => <A>(fa: Array<A>) => Array<{ [K in N]: A }> = RA.bindTo as any
+
+/**
+ * @since 2.8.0
+ */
+export const bind: <N extends string, A, B>(
+  name: Exclude<N, keyof A>,
+  f: (a: A) => Array<B>
+) => (fa: Array<A>) => Array<{ [K in keyof A | N]: K extends keyof A ? A[K] : B }> = RA.bind as any
+
+// -------------------------------------------------------------------------------------
+// pipeable sequence S
+// -------------------------------------------------------------------------------------
+
+/**
+ * @since 2.8.0
+ */
+export const apS: <A, N extends string, B>(
+  name: Exclude<N, keyof A>,
+  fb: Array<B>
+) => (fa: Array<A>) => Array<{ [K in keyof A | N]: K extends keyof A ? A[K] : B }> = RA.apS as any

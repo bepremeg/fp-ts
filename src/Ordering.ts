@@ -1,37 +1,56 @@
+/**
+ * @since 2.0.0
+ */
 import { Semigroup } from './Semigroup'
-import { Setoid } from './Setoid'
+import { Eq } from './Eq'
+import { Monoid } from './Monoid'
 
+/**
+ * @category model
+ * @since 2.0.0
+ */
 export type Ordering = -1 | 0 | 1
 
 /**
- * @function
- * @since 1.0.0
+ * @since 2.0.0
  */
-export const sign = (n: number): Ordering => {
+export function sign(n: number): Ordering {
   return n <= -1 ? -1 : n >= 1 ? 1 : 0
 }
 
 /**
- * @instance
- * @since 1.0.0
+ * @category instances
+ * @since 2.0.0
  */
-export const setoidOrdering: Setoid<Ordering> = {
+export const eqOrdering: Eq<Ordering> = {
   equals: (x, y) => x === y
 }
 
 /**
- * @instance
- * @since 1.0.0
+ * Use `monoidOrdering` instead
+ *
+ * @category instances
+ * @since 2.0.0
+ * @deprecated
  */
 export const semigroupOrdering: Semigroup<Ordering> = {
   concat: (x, y) => (x !== 0 ? x : y)
 }
 
 /**
- * @function
- * @since 1.0.0
+ * @category instances
+ * @since 2.4.0
  */
-export const invert = (O: Ordering): Ordering => {
+export const monoidOrdering: Monoid<Ordering> = {
+  // tslint:disable-next-line: deprecation
+  concat: semigroupOrdering.concat,
+  empty: 0
+}
+
+/**
+ * @since 2.0.0
+ */
+export function invert(O: Ordering): Ordering {
   switch (O) {
     case -1:
       return 1

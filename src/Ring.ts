@@ -1,50 +1,73 @@
-import { Semiring, getFunctionSemiring } from './Semiring'
-
-// adapted from https://github.com/purescript/purescript-prelude/blob/master/src/Data/Ring.purs
-
 /**
  * The `Ring` class is for types that support addition, multiplication, and subtraction operations.
  *
  * Instances must satisfy the following law in addition to the `Semiring` laws:
  *
- * - Additive inverse: `a - a = (zero - a) + a = zero`
- * @typeclass
- * @since 1.0.0
+ * - Additive inverse: `a - a <-> (zero - a) + a <-> zero`
+ *
+ * Adapted from https://github.com/purescript/purescript-prelude/blob/master/src/Data/Ring.purs
+ *
+ * @since 2.0.0
+ */
+import { Semiring, getFunctionSemiring } from './Semiring'
+
+/**
+ * @category type classes
+ * @since 2.0.0
  */
 export interface Ring<A> extends Semiring<A> {
   readonly sub: (x: A, y: A) => A
 }
 
 /**
- * @function
- * @since 1.0.0
+ * @category instances
+ * @since 2.0.0
  */
-export const getFunctionRing = <A, B>(ring: Ring<B>): Ring<(a: A) => B> => {
+export function getFunctionRing<A, B>(ring: Ring<B>): Ring<(a: A) => B> {
+  const S = getFunctionSemiring<A, B>(ring)
   return {
-    ...getFunctionSemiring(ring),
-    sub: (f, g) => x => ring.sub(f(x), g(x))
+    add: S.add,
+    mul: S.mul,
+    one: S.one,
+    zero: S.zero,
+    sub: (f, g) => (x) => ring.sub(f(x), g(x))
   }
 }
 
 /**
  * `negate x` can be used as a shorthand for `zero - x`
- * @function
- * @since 1.0.0
+ *
+ * @since 2.0.0
  */
-export const negate = <A>(ring: Ring<A>) => (a: A): A => {
-  return ring.sub(ring.zero, a)
+export function negate<A>(ring: Ring<A>): (a: A) => A {
+  return (a) => ring.sub(ring.zero, a)
 }
 
 /**
- * @function
- * @since 1.0.0
+ * Given a tuple of `Ring`s returns a `Ring` for the tuple
+ *
+ * @example
+ * import { getTupleRing } from 'fp-ts/Ring'
+ * import { fieldNumber } from 'fp-ts/Field'
+ *
+ * const R = getTupleRing(fieldNumber, fieldNumber, fieldNumber)
+ * assert.deepStrictEqual(R.add([1, 2, 3], [4, 5, 6]), [5, 7, 9])
+ * assert.deepStrictEqual(R.mul([1, 2, 3], [4, 5, 6]), [4, 10, 18])
+ * assert.deepStrictEqual(R.one, [1, 1, 1])
+ * assert.deepStrictEqual(R.sub([1, 2, 3], [4, 5, 6]), [-3, -3, -3])
+ * assert.deepStrictEqual(R.zero, [0, 0, 0])
+ *
+ * @category instances
+ * @since 2.0.0
  */
-export const getProductRing = <A, B>(RA: Ring<A>, RB: Ring<B>): Ring<[A, B]> => {
+export function getTupleRing<T extends ReadonlyArray<Ring<any>>>(
+  ...rings: T
+): Ring<{ [K in keyof T]: T[K] extends Ring<infer A> ? A : never }> {
   return {
-    add: ([a1, b1], [a2, b2]) => [RA.add(a1, a2), RB.add(b1, b2)],
-    zero: [RA.zero, RB.zero],
-    mul: ([a1, b1], [a2, b2]) => [RA.mul(a1, a2), RB.mul(b1, b2)],
-    one: [RA.one, RB.one],
-    sub: ([a1, b1], [a2, b2]) => [RA.sub(a1, a2), RB.sub(b1, b2)]
-  }
+    add: (x: any, y: any) => rings.map((R, i) => R.add(x[i], y[i])),
+    zero: rings.map((R) => R.zero),
+    mul: (x: any, y: any) => rings.map((R, i) => R.mul(x[i], y[i])),
+    one: rings.map((R) => R.one),
+    sub: (x: any, y: any) => rings.map((R, i) => R.sub(x[i], y[i]))
+  } as any
 }

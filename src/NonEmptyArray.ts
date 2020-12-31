@@ -1,380 +1,780 @@
-import { Applicative } from './Applicative'
-import { array, last, sort } from './Array'
-import { Comonad1 } from './Comonad'
-import { Foldable1 } from './Foldable'
-import { HKT } from './HKT'
-import { Monad1 } from './Monad'
-import { Option, none, some } from './Option'
-import { Ord } from './Ord'
-import { Semigroup, fold, getJoinSemigroup, getMeetSemigroup } from './Semigroup'
-import { Traversable1 } from './Traversable'
-import { concat as uncurriedConcat, toString, compose } from './function'
-import { Setoid } from './Setoid'
-
-declare module './HKT' {
-  interface URI2HKT<A> {
-    NonEmptyArray: NonEmptyArray<A>
-  }
-}
-
-export const URI = 'NonEmptyArray'
-
-export type URI = typeof URI
-
 /**
  * Data structure which represents non-empty arrays
- * @data
- * @constructor NonEmptyArray
- * @since 1.0.0
+ *
+ * @since 2.0.0
  */
-export class NonEmptyArray<A> {
-  readonly _A!: A
-  readonly _URI!: URI
-  constructor(readonly head: A, readonly tail: Array<A>) {}
+import { Alt1 } from './Alt'
+import { Applicative1 } from './Applicative'
+import { Comonad1 } from './Comonad'
+import { Eq } from './Eq'
+import { Extend1 } from './Extend'
+import { Foldable1 } from './Foldable'
+import { FoldableWithIndex1 } from './FoldableWithIndex'
+import { Lazy, Predicate, Refinement } from './function'
+import { Functor1 } from './Functor'
+import { FunctorWithIndex1 } from './FunctorWithIndex'
+import { Monad1 } from './Monad'
+import { Option } from './Option'
+import { Ord } from './Ord'
+import * as RNEA from './ReadonlyNonEmptyArray'
+import { Semigroup } from './Semigroup'
+import { Show } from './Show'
+import { PipeableTraverse1, Traversable1 } from './Traversable'
+import { PipeableTraverseWithIndex1, TraversableWithIndex1 } from './TraversableWithIndex'
 
-  /**
-   * Converts this {@link NonEmptyArray} to plain {@link Array}
-   * @since 1.0.0
-   * @example
-   * assert.deepEqual(new NonEmptyArray(1, [2, 3]), [1, 2, 3])
-   * @returns {Array<A>} foo
-   */
-  toArray(): Array<A> {
-    return uncurriedConcat([this.head], this.tail)
-  }
+/* tslint:disable:readonly-array */
 
-  /**
-   * Concatenates this {@link NonEmptyArray} and passed {@link Array}
-   * @since 1.0.0
-   * @param {Array<A>} as - {@link Array}
-   * @example
-   * assert.deepEqual(new NonEmptyArray(1, []).concatArray([2]), new NonEmptyArray(1, [2]))
-   * @returns {NonEmptyArray<A>}
-   */
-  concatArray(as: Array<A>): NonEmptyArray<A> {
-    return new NonEmptyArray(this.head, uncurriedConcat(this.tail, as))
-  }
+// -------------------------------------------------------------------------------------
+// model
+// -------------------------------------------------------------------------------------
 
-  /**
-   * Instance-bound implementation of {@link Functor}
-   * @since 1.0.0
-   * @param {(a: A) => B} f
-   * @example
-   * const double = (n: number): number => n * 2
-   * assert.deepEqual(new NonEmptyArray(1, [2]).map(double), new NonEmptyArray(2, [4]))
-   * @returns {NonEmptyArray<B>}
-   */
-  map<B>(f: (a: A) => B): NonEmptyArray<B> {
-    return new NonEmptyArray(f(this.head), this.tail.map(f))
-  }
-
-  /**
-   * Instance-bound implementation of {@link Apply}
-   * @since 1.0.0
-   * @param {NonEmptyArray<(a: A) => B>} fab
-   * @example
-   * const x = new NonEmptyArray(1, [2])
-   * const double = (n: number) => n * 2
-   * assert.deepEqual(x.ap(new NonEmptyArray(double, [double])).toArray(), [2, 4, 2, 4])
-   * @returns {NonEmptyArray<B>}
-   */
-  ap<B>(fab: NonEmptyArray<(a: A) => B>): NonEmptyArray<B> {
-    return fab.chain(f => this.map(f)) // <= derived
-  }
-
-  /**
-   * Same as {@link ap} but works on {@link NonEmptyArray} of functions and accepts {@link NonEmptyArray} of values instead
-   * @since 1.0.0
-   * @this {NonEmptyArray<(b: B) => C>}
-   * @param {NonEmptyArray<B>} fb
-   * @example
-   * const x = new NonEmptyArray(1, [2])
-   * const double = (n: number) => n * 2
-   * assert.deepEqual(new NonEmptyArray(double, [double]).ap_(x).toArray(), [2, 4, 2, 4])
-   * @returns {NonEmptyArray<C>}
-   */
-  ap_<B, C>(this: NonEmptyArray<(b: B) => C>, fb: NonEmptyArray<B>): NonEmptyArray<C> {
-    return fb.ap(this)
-  }
-
-  /**
-   * Instance-bound implementation of {@link Chain}
-   * @since 1.0.0
-   * @param {(a: A) => NonEmptyArray<B>} f
-   * @example
-   * const x = new NonEmptyArray(1, [2])
-   * const f = (a: number) => new NonEmptyArray(a, [4])
-   * assert.deepEqual(x.chain(f).toArray(), [1, 4, 2, 4])
-   * @returns {NonEmptyArray<B>}
-   */
-  chain<B>(f: (a: A) => NonEmptyArray<B>): NonEmptyArray<B> {
-    return f(this.head).concatArray(array.chain(this.tail, a => f(a).toArray()))
-  }
-
-  /**
-   * Instance-bound implementation of {@link Semigroup}
-   * @since 1.0.0
-   * @param {NonEmptyArray<A>} y
-   * @example
-   * const x = new NonEmptyArray(1, [2])
-   * const y = new NonEmptyArray(3, [4])
-   * assert.deepEqual(x.concat(y).toArray(), [1, 2, 3, 4])
-   * @returns {NonEmptyArray<A>}
-   */
-  concat(y: NonEmptyArray<A>): NonEmptyArray<A> {
-    return this.concatArray(y.toArray())
-  }
-
-  /**
-   * Instance-bound implementation of {@link Foldable}
-   * @since 1.0.0
-   * @param {B} b
-   * @param {(b: B, a: A) => B} f
-   * @example
-   * const x = new NonEmptyArray('a', ['b'])
-   * assert.strictEqual(x.reduce('', (b, a) => b + a), 'ab')
-   * @returns {B}
-   */
-  reduce<B>(b: B, f: (b: B, a: A) => B): B {
-    return array.reduce(this.toArray(), b, f)
-  }
-
-  /**
-   * Instance-bound implementation of {@link Extend}
-   * @since 1.0.0
-   * @param {(fa: NonEmptyArray<A>) => B} f
-   * @example
-   * const sum = (as: NonEmptyArray<number>) => fold(monoidSum)(as.toArray())
-   * assert.deepEqual(new NonEmptyArray(1, [2, 3, 4]).extend(sum), new NonEmptyArray(10, [9, 7, 4]))
-   * @returns {NonEmptyArray<B>}
-   */
-  extend<B>(f: (fa: NonEmptyArray<A>) => B): NonEmptyArray<B> {
-    return unsafeFromArray(array.extend(this.toArray(), as => f(unsafeFromArray(as))))
-  }
-
-  /**
-   * Instance-bound implementation of {@link Comonad}
-   * @since 1.0.0
-   * @example
-   * assert.strictEqual(new NonEmptyArray(1, [2, 3]).extract(), 1)
-   * @returns {A}
-   */
-  extract(): A {
-    return this.head
-  }
-
-  /**
-   * Same as {@link toString}
-   * @since 1.0.0
-   * @returns {string}
-   */
-  inspect(): string {
-    return this.toString()
-  }
-
-  /**
-   * Return stringified representation of this {@link NonEmptyArray}
-   * @since 1.0.0
-   * @returns {string}
-   */
-  toString(): string {
-    return `new NonEmptyArray(${toString(this.head)}, ${toString(this.tail)})`
-  }
-
-  /**
-   * Gets minimum of this {@link NonEmptyArray} using specified {@link Ord} instance
-   * @since 1.3.0
-   * @param ord - {@link Ord} instance
-   * @example
-   * const minimum = new NonEmptyArray(1, [2, 3]).min(ordNumber) // 1
-   * @returns {A}
-   */
-  min(ord: Ord<A>): A {
-    return fold(getMeetSemigroup(ord))(this.head)(this.tail)
-  }
-
-  /**
-   * Gets maximum of this {@link NonEmptyArray} using specified {@link Ord} instance
-   * @since 1.3.0
-   * @param ord - {@link Ord} instance
-   * @example
-   * const maximum = new NonEmptyArray(1, [2, 3]).max(ordNumber) // 3
-   * @returns {A}
-   */
-  max(ord: Ord<A>): A {
-    return fold(getJoinSemigroup(ord))(this.head)(this.tail)
-  }
-
-  /**
-   * Gets last element of this {@link NonEmptyArray}
-   * @since 1.6.0
-   * @example
-   * const last = new NonEmptyArray(1, [2, 3]).last(); // 3
-   * const last = new NonEmptyArray(1, []).last(); // 1
-   * @returns {A}
-   */
-  last(): A {
-    return last(this.tail).getOrElse(this.head)
-  }
-
-  /**
-   * Sorts this {@link NonEmptyArray} using specified {@link Ord} instance
-   * @since 1.6.0
-   * @param {Ord<A>} ord - {@link Ord} instance
-   * @example
-   * const result = new NonEmptyArray(3, [2, 1]).sort(ordNumber)
-   * const expected = new NonEmptyArray(1, [2, 3])
-   * assert.deepEqual(result, expected)
-   * @returns {NonEmptyArray<A>}
-   */
-  sort(ord: Ord<A>): NonEmptyArray<A> {
-    return unsafeFromArray(sort(ord)(this.toArray()))
-  }
-
-  /**
-   * Reverts this {@link NonEmptyArray}
-   * @since 1.6.0
-   * @example
-   * const result = new NonEmptyArray(1, [2, 3]).reverse()
-   * const expected = new NonEmptyArray(3, [2, 1])
-   * assert.deepEqual(result, expected)
-   * @returns {NonEmptyArray<A>}
-   */
-  reverse(): NonEmptyArray<A> {
-    return unsafeFromArray(this.toArray().reverse())
-  }
+/* tslint:disable:readonly-keyword */
+/**
+ * @category model
+ * @since 2.0.0
+ */
+export interface NonEmptyArray<A> extends Array<A> {
+  0: A
 }
-
-const unsafeFromArray = <A>(as: Array<A>): NonEmptyArray<A> => {
-  return new NonEmptyArray(as[0], as.slice(1))
-}
+/* tslint:enable:readonly-keyword */
 
 /**
- * Builds {@link NonEmptyArray} from {@link Array} returning {@link Option#none} or {@link Option#some} depending on amount of values in passed array
- * @function
- * @since 1.0.0
- * @param {Array<A>} as
- * @returns {Option<NonEmptyArray<A>>}
+ * Append an element to the front of an array, creating a new non empty array
+ *
+ * @example
+ * import { cons } from 'fp-ts/NonEmptyArray'
+ *
+ * assert.deepStrictEqual(cons(1, [2, 3, 4]), [1, 2, 3, 4])
+ *
+ * @category constructors
+ * @since 2.0.0
  */
-export const fromArray = <A>(as: Array<A>): Option<NonEmptyArray<A>> => {
-  return as.length > 0 ? some(unsafeFromArray(as)) : none
-}
-
-const map = <A, B>(fa: NonEmptyArray<A>, f: (a: A) => B): NonEmptyArray<B> => {
-  return fa.map(f)
-}
-
-const of = <A>(a: A): NonEmptyArray<A> => {
-  return new NonEmptyArray(a, [])
-}
-
-const ap = <A, B>(fab: NonEmptyArray<(a: A) => B>, fa: NonEmptyArray<A>): NonEmptyArray<B> => {
-  return fa.ap(fab)
-}
-
-const chain = <A, B>(fa: NonEmptyArray<A>, f: (a: A) => NonEmptyArray<B>): NonEmptyArray<B> => {
-  return fa.chain(f)
-}
-
-const concat = <A>(fx: NonEmptyArray<A>, fy: NonEmptyArray<A>): NonEmptyArray<A> => {
-  return fx.concat(fy)
-}
+export const cons: <A>(head: A, tail: Array<A>) => NonEmptyArray<A> = RNEA.cons as any
 
 /**
- * Builds {@link Semigroup} instance for {@link NonEmptyArray} of specified type arument
- * @function
- * @since 1.0.0
- * @returns {Semigroup<NonEmptyArray<A>>}
+ * Append an element to the end of an array, creating a new non empty array
+ *
+ * @example
+ * import { snoc } from 'fp-ts/NonEmptyArray'
+ *
+ * assert.deepStrictEqual(snoc([1, 2, 3], 4), [1, 2, 3, 4])
+ *
+ * @category constructors
+ * @since 2.0.0
  */
-export const getSemigroup = <A = never>(): Semigroup<NonEmptyArray<A>> => {
-  return { concat }
-}
+export const snoc: <A>(init: Array<A>, end: A) => NonEmptyArray<A> = RNEA.snoc as any
+
+/**
+ * Builds a `NonEmptyArray` from an `Array` returning `none` if `as` is an empty array
+ *
+ * @category constructors
+ * @since 2.0.0
+ */
+export const fromArray: <A>(as: Array<A>) => Option<NonEmptyArray<A>> = RNEA.fromArray as any
+
+/**
+ * Produces a couple of the first element of the array, and a new array of the remaining elements, if any
+ *
+ * @example
+ * import { cons, uncons } from 'fp-ts/NonEmptyArray'
+ *
+ * assert.deepStrictEqual(uncons(cons(1, [2, 3, 4])), [1, [2, 3, 4]])
+ *
+ * @category destructors
+ * @since 2.9.0
+ */
+export const uncons: <A>(nea: NonEmptyArray<A>) => readonly [A, Array<A>] = RNEA.uncons as any
+
+/**
+ * Produces a couple of a copy of the array without its last element, and that last element
+ *
+ * @example
+ * import { snoc, unsnoc } from 'fp-ts/NonEmptyArray'
+ *
+ * assert.deepStrictEqual(unsnoc(snoc([1, 2, 3], 4)), [[1, 2, 3], 4])
+ *
+ * @category destructors
+ * @since 2.9.0
+ */
+export const unsnoc: <A>(nea: NonEmptyArray<A>) => readonly [Array<A>, A] = RNEA.unsnoc as any
+
+/**
+ * @category instances
+ * @since 2.0.0
+ */
+export const getShow: <A>(S: Show<A>) => Show<NonEmptyArray<A>> = RNEA.getShow
+
+/**
+ * @since 2.0.0
+ */
+export const head: <A>(nea: NonEmptyArray<A>) => A = RNEA.head
+
+/**
+ * @since 2.0.0
+ */
+export const tail: <A>(nea: NonEmptyArray<A>) => Array<A> = RNEA.tail as any
+
+/**
+ * @category combinators
+ * @since 2.0.0
+ */
+export const reverse: <A>(nea: NonEmptyArray<A>) => NonEmptyArray<A> = RNEA.reverse as any
+
+/**
+ * @since 2.0.0
+ */
+export const min: <A>(ord: Ord<A>) => (nea: NonEmptyArray<A>) => A = RNEA.min
+
+/**
+ * @since 2.0.0
+ */
+export const max: <A>(ord: Ord<A>) => (nea: NonEmptyArray<A>) => A = RNEA.max
+
+/**
+ * Builds a `Semigroup` instance for `NonEmptyArray`
+ *
+ * @category instances
+ * @since 2.0.0
+ */
+export const getSemigroup: <A = never>() => Semigroup<NonEmptyArray<A>> = RNEA.getSemigroup as any
+
+/**
+ * @example
+ * import { getEq, cons } from 'fp-ts/NonEmptyArray'
+ * import { eqNumber } from 'fp-ts/Eq'
+ *
+ * const E = getEq(eqNumber)
+ * assert.strictEqual(E.equals(cons(1, [2]), [1, 2]), true)
+ * assert.strictEqual(E.equals(cons(1, [2]), [1, 3]), false)
+ *
+ * @category instances
+ * @since 2.0.0
+ */
+export const getEq: <A>(E: Eq<A>) => Eq<NonEmptyArray<A>> = RNEA.getEq
 
 /**
  * Group equal, consecutive elements of an array into non empty arrays.
  *
  * @example
- * import { ordNumber } from 'fp-ts/lib/Ord'
+ * import { cons, group } from 'fp-ts/NonEmptyArray'
+ * import { ordNumber } from 'fp-ts/Ord'
  *
- * assert.deepEqual(group(ordNumber)([1, 2, 1, 1]), [
- *   new NonEmptyArray(1, []),
- *   new NonEmptyArray(2, []),
- *   new NonEmptyArray(1, [1])
+ * assert.deepStrictEqual(group(ordNumber)([1, 2, 1, 1]), [
+ *   cons(1, []),
+ *   cons(2, []),
+ *   cons(1, [1])
  * ])
  *
- * @function
- * @since 1.7.0
+ * @category combinators
+ * @since 2.0.0
  */
-export const group = <A>(S: Setoid<A>) => (as: Array<A>): Array<NonEmptyArray<A>> => {
-  const r: Array<NonEmptyArray<A>> = []
-  const len = as.length
-  if (len === 0) {
-    return r
-  }
-  let head: A = as[0]
-  let tail: Array<A> = []
-  for (let i = 1; i < len; i++) {
-    const x = as[i]
-    if (S.equals(x, head)) {
-      tail.push(x)
-    } else {
-      r.push(new NonEmptyArray(head, tail))
-      head = x
-      tail = []
-    }
-  }
-  r.push(new NonEmptyArray(head, tail))
-  return r
+export function group<B>(
+  E: Eq<B>
+): {
+  <A extends B>(as: NonEmptyArray<A>): NonEmptyArray<NonEmptyArray<A>>
+  <A extends B>(as: Array<A>): Array<NonEmptyArray<A>>
+}
+export function group<A>(E: Eq<A>): (as: Array<A>) => Array<NonEmptyArray<A>> {
+  return RNEA.group(E) as any
 }
 
 /**
  * Sort and then group the elements of an array into non empty arrays.
  *
  * @example
- * import { ordNumber } from 'fp-ts/lib/Ord'
+ * import { cons, groupSort } from 'fp-ts/NonEmptyArray'
+ * import { ordNumber } from 'fp-ts/Ord'
  *
- * assert.deepEqual(groupSort(ordNumber)([1, 2, 1, 1]), [new NonEmptyArray(1, [1, 1]), new NonEmptyArray(2, [])])
+ * assert.deepStrictEqual(groupSort(ordNumber)([1, 2, 1, 1]), [cons(1, [1, 1]), cons(2, [])])
  *
- * @function
- * @since 1.7.0
+ * @category combinators
+ * @since 2.0.0
  */
-export const groupSort = <A>(O: Ord<A>): ((as: Array<A>) => Array<NonEmptyArray<A>>) => {
-  return compose(
-    group(O),
-    sort(O)
-  )
-}
+export const groupSort: <B>(
+  O: Ord<B>
+) => {
+  <A extends B>(as: NonEmptyArray<A>): NonEmptyArray<NonEmptyArray<A>>
+  <A extends B>(as: Array<A>): Array<NonEmptyArray<A>>
+} = RNEA.groupSort as any
 
-const reduce = <A, B>(fa: NonEmptyArray<A>, b: B, f: (b: B, a: A) => B): B => {
-  return fa.reduce(b, f)
-}
+/**
+ * Splits an array into sub-non-empty-arrays stored in an object, based on the result of calling a `string`-returning
+ * function on each element, and grouping the results according to values returned
+ *
+ * @example
+ * import { cons, groupBy } from 'fp-ts/NonEmptyArray'
+ *
+ * assert.deepStrictEqual(groupBy((s: string) => String(s.length))(['foo', 'bar', 'foobar']), {
+ *   '3': cons('foo', ['bar']),
+ *   '6': cons('foobar', [])
+ * })
+ *
+ * @category constructors
+ * @since 2.0.0
+ */
+export const groupBy: <A>(
+  f: (a: A) => string
+) => (as: Array<A>) => Record<string, NonEmptyArray<A>> = RNEA.groupBy as any
 
-const extend = <A, B>(fa: NonEmptyArray<A>, f: (fa: NonEmptyArray<A>) => B): NonEmptyArray<B> => {
-  return fa.extend(f)
-}
+/**
+ * @since 2.0.0
+ */
+export const last: <A>(nea: NonEmptyArray<A>) => A = RNEA.last
 
-const extract = <A>(fa: NonEmptyArray<A>): A => {
-  return fa.extract()
-}
+/**
+ * Get all but the last element of a non empty array, creating a new array.
+ *
+ * @example
+ * import { init } from 'fp-ts/NonEmptyArray'
+ *
+ * assert.deepStrictEqual(init([1, 2, 3]), [1, 2])
+ * assert.deepStrictEqual(init([1]), [])
+ *
+ * @since 2.2.0
+ */
+export const init: <A>(nea: NonEmptyArray<A>) => Array<A> = RNEA.init as any
 
-function traverse<F>(
-  F: Applicative<F>
-): <A, B>(ta: NonEmptyArray<A>, f: (a: A) => HKT<F, B>) => HKT<F, NonEmptyArray<B>> {
-  return (ta, f) => F.map(array.traverse(F)(ta.toArray(), f), unsafeFromArray)
+/**
+ * @category combinators
+ * @since 2.0.0
+ */
+export const sort: <B>(O: Ord<B>) => <A extends B>(nea: NonEmptyArray<A>) => NonEmptyArray<A> = RNEA.sort as any
+
+/**
+ * @since 2.0.0
+ */
+export const insertAt: <A>(
+  i: number,
+  a: A
+) => (nea: NonEmptyArray<A>) => Option<NonEmptyArray<A>> = RNEA.insertAt as any
+
+/**
+ * @since 2.0.0
+ */
+export const updateAt: <A>(
+  i: number,
+  a: A
+) => (nea: NonEmptyArray<A>) => Option<NonEmptyArray<A>> = RNEA.updateAt as any
+
+/**
+ * @since 2.0.0
+ */
+export const modifyAt: <A>(
+  i: number,
+  f: (a: A) => A
+) => (nea: NonEmptyArray<A>) => Option<NonEmptyArray<A>> = RNEA.modifyAt as any
+
+/**
+ * @category combinators
+ * @since 2.0.0
+ */
+export function copy<A>(nea: NonEmptyArray<A>): NonEmptyArray<A> {
+  const l = nea.length
+  const as = Array(l)
+  for (let i = 0; i < l; i++) {
+    as[i] = nea[i]
+  }
+  return as as any
 }
 
 /**
- * @instance
- * @since 1.0.0
+ * @category combinators
+ * @since 2.0.0
  */
-export const nonEmptyArray: Monad1<URI> & Comonad1<URI> & Foldable1<URI> & Traversable1<URI> = {
-  URI,
-  extend,
-  extract,
-  map,
-  of,
-  ap,
-  chain,
-  reduce,
-  traverse
+export function filter<A, B extends A>(
+  refinement: Refinement<A, B>
+): (nea: NonEmptyArray<A>) => Option<NonEmptyArray<A>>
+export function filter<A>(predicate: Predicate<A>): (nea: NonEmptyArray<A>) => Option<NonEmptyArray<A>>
+export function filter<A>(predicate: Predicate<A>): (nea: NonEmptyArray<A>) => Option<NonEmptyArray<A>> {
+  return RNEA.filter(predicate) as any
 }
+
+/**
+ * @since 2.0.0
+ */
+export const filterWithIndex: <A>(
+  predicate: (i: number, a: A) => boolean
+) => (nea: NonEmptyArray<A>) => Option<NonEmptyArray<A>> = RNEA.filterWithIndex as any
+
+/**
+ * Wrap a value into the type constructor.
+ *
+ * @category Applicative
+ * @since 2.0.0
+ */
+export const of: Applicative1<URI>['of'] = RNEA.of as any
+
+// TODO: curry in v3
+/**
+ * @category constructors
+ * @since 2.2.0
+ */
+export function concat<A>(fx: Array<A>, fy: NonEmptyArray<A>): NonEmptyArray<A>
+export function concat<A>(fx: NonEmptyArray<A>, fy: Array<A>): NonEmptyArray<A>
+export function concat<A>(fx: Array<A>, fy: Array<A>): Array<A> {
+  return RNEA.concat(fx as any, fy as any) as any
+}
+
+/**
+ * @since 2.5.0
+ */
+export const fold: <A>(S: Semigroup<A>) => (fa: NonEmptyArray<A>) => A = RNEA.fold
+
+/**
+ * @category combinators
+ * @since 2.5.1
+ */
+export const zipWith: <A, B, C>(
+  fa: NonEmptyArray<A>,
+  fb: NonEmptyArray<B>,
+  f: (a: A, b: B) => C
+) => NonEmptyArray<C> = RNEA.zipWith as any
+
+/**
+ * @category combinators
+ * @since 2.5.1
+ */
+export const zip: {
+  <B>(bs: NonEmptyArray<B>): <A>(as: NonEmptyArray<A>) => NonEmptyArray<[A, B]>
+  <A, B>(as: NonEmptyArray<A>, bs: NonEmptyArray<B>): NonEmptyArray<[A, B]>
+} = RNEA.zip as any
+
+/**
+ * @since 2.5.1
+ */
+export const unzip: <A, B>(as: NonEmptyArray<[A, B]>) => [NonEmptyArray<A>, NonEmptyArray<B>] = RNEA.unzip as any
+
+/**
+ * Prepend an element to every member of an array
+ *
+ * @example
+ * import { cons, prependToAll } from 'fp-ts/NonEmptyArray'
+ *
+ * assert.deepStrictEqual(prependToAll(9)(cons(1, [2, 3, 4])), cons(9, [1, 9, 2, 9, 3, 9, 4]))
+ *
+ * @category combinators
+ * @since 2.9.0
+ */
+export const prependToAll: <A>(e: A) => (xs: NonEmptyArray<A>) => NonEmptyArray<A> = RNEA.prependToAll as any
+
+/**
+ * Places an element in between members of an array
+ *
+ * @example
+ * import { cons, intersperse } from 'fp-ts/NonEmptyArray'
+ *
+ * assert.deepStrictEqual(intersperse(9)(cons(1, [2, 3, 4])), cons(1, [9, 2, 9, 3, 9, 4]))
+ *
+ * @category combinators
+ * @since 2.9.0
+ */
+export const intersperse: <A>(e: A) => (as: NonEmptyArray<A>) => NonEmptyArray<A> = RNEA.intersperse as any
+
+// -------------------------------------------------------------------------------------
+// non-pipeables
+// -------------------------------------------------------------------------------------
+
+const map_: Monad1<URI>['map'] = RNEA.Functor.map as any
+const mapWithIndex_: FunctorWithIndex1<URI, number>['mapWithIndex'] = RNEA.FunctorWithIndex.mapWithIndex as any
+const ap_: Monad1<URI>['ap'] = RNEA.Applicative.ap as any
+const chain_: Monad1<URI>['chain'] = RNEA.Monad.chain as any
+const extend_: Extend1<URI>['extend'] = RNEA.Comonad.extend as any
+const reduce_: Foldable1<URI>['reduce'] = RNEA.Foldable.reduce as any
+const foldMap_: Foldable1<URI>['foldMap'] = RNEA.Foldable.foldMap as any
+const reduceRight_: Foldable1<URI>['reduceRight'] = RNEA.Foldable.reduceRight as any
+const traverse_: Traversable1<URI>['traverse'] = RNEA.Traversable.traverse as any
+const alt_: Alt1<URI>['alt'] = RNEA.Alt.alt as any
+const reduceWithIndex_: FoldableWithIndex1<URI, number>['reduceWithIndex'] = RNEA.FoldableWithIndex
+  .reduceWithIndex as any
+const foldMapWithIndex_: FoldableWithIndex1<URI, number>['foldMapWithIndex'] = RNEA.FoldableWithIndex
+  .foldMapWithIndex as any
+const reduceRightWithIndex_: FoldableWithIndex1<URI, number>['reduceRightWithIndex'] = RNEA.FoldableWithIndex
+  .reduceRightWithIndex as any
+const traverseWithIndex_: TraversableWithIndex1<URI, number>['traverseWithIndex'] = RNEA.TraversableWithIndex
+  .traverseWithIndex as any
+
+// -------------------------------------------------------------------------------------
+// pipeables
+// -------------------------------------------------------------------------------------
+
+/**
+ * @category FoldableWithIndex
+ * @since 2.0.0
+ */
+export const foldMapWithIndex: <S>(S: Semigroup<S>) => <A>(f: (i: number, a: A) => S) => (fa: NonEmptyArray<A>) => S =
+  RNEA.foldMapWithIndex
+
+/**
+ * @category Foldable
+ * @since 2.0.0
+ */
+export const foldMap: <S>(S: Semigroup<S>) => <A>(f: (a: A) => S) => (fa: NonEmptyArray<A>) => S = RNEA.foldMap
+
+/**
+ * Less strict version of [`alt`](#alt).
+ *
+ * @category Alt
+ * @since 2.9.0
+ */
+export const altW: <B>(
+  that: Lazy<NonEmptyArray<B>>
+) => <A>(fa: NonEmptyArray<A>) => NonEmptyArray<A | B> = RNEA.altW as any
+
+/**
+ * Identifies an associative operation on a type constructor. It is similar to `Semigroup`, except that it applies to
+ * types of kind `* -> *`.
+ *
+ * @category Alt
+ * @since 2.6.2
+ */
+export const alt: <A>(that: Lazy<NonEmptyArray<A>>) => (fa: NonEmptyArray<A>) => NonEmptyArray<A> = RNEA.alt as any
+
+/**
+ * Apply a function to an argument under a type constructor.
+ *
+ * @category Apply
+ * @since 2.0.0
+ */
+export const ap: <A>(fa: NonEmptyArray<A>) => <B>(fab: NonEmptyArray<(a: A) => B>) => NonEmptyArray<B> = RNEA.ap as any
+
+/**
+ * Combine two effectful actions, keeping only the result of the first.
+ *
+ * Derivable from `Apply`.
+ *
+ * @category combinators
+ * @since 2.0.0
+ */
+export const apFirst: <B>(fb: NonEmptyArray<B>) => <A>(fa: NonEmptyArray<A>) => NonEmptyArray<A> = RNEA.apFirst as any
+
+/**
+ * Combine two effectful actions, keeping only the result of the second.
+ *
+ * Derivable from `Apply`.
+ *
+ * @category combinators
+ * @since 2.0.0
+ */
+export const apSecond: <B>(fb: NonEmptyArray<B>) => <A>(fa: NonEmptyArray<A>) => NonEmptyArray<B> = RNEA.apSecond as any
+
+/**
+ * Composes computations in sequence, using the return value of one computation to determine the next computation.
+ *
+ * @category Monad
+ * @since 2.0.0
+ */
+export const chain: <A, B>(
+  f: (a: A) => NonEmptyArray<B>
+) => (ma: NonEmptyArray<A>) => NonEmptyArray<B> = RNEA.chain as any
+
+/**
+ * Composes computations in sequence, using the return value of one computation to determine the next computation and
+ * keeping only the result of the first.
+ *
+ * Derivable from `Monad`.
+ *
+ * @category combinators
+ * @since 2.0.0
+ */
+export const chainFirst: <A, B>(
+  f: (a: A) => NonEmptyArray<B>
+) => (ma: NonEmptyArray<A>) => NonEmptyArray<A> = RNEA.chainFirst as any
+
+/**
+ * Derivable from `Extend`.
+ *
+ * @category combinators
+ * @since 2.0.0
+ */
+export const duplicate: <A>(ma: NonEmptyArray<A>) => NonEmptyArray<NonEmptyArray<A>> = RNEA.duplicate as any
+
+/**
+ * @category Extend
+ * @since 2.0.0
+ */
+export const extend: <A, B>(
+  f: (fa: NonEmptyArray<A>) => B
+) => (ma: NonEmptyArray<A>) => NonEmptyArray<B> = RNEA.extend as any
+
+/**
+ * Derivable from `Monad`.
+ *
+ * @category combinators
+ * @since 2.0.0
+ */
+export const flatten: <A>(mma: NonEmptyArray<NonEmptyArray<A>>) => NonEmptyArray<A> = RNEA.flatten as any
+
+/**
+ * `map` can be used to turn functions `(a: A) => B` into functions `(fa: F<A>) => F<B>` whose argument and return types
+ * use the type constructor `F` to represent some computational context.
+ *
+ * @category Functor
+ * @since 2.0.0
+ */
+export const map: <A, B>(f: (a: A) => B) => (fa: NonEmptyArray<A>) => NonEmptyArray<B> = RNEA.map as any
+
+/**
+ * @category FunctorWithIndex
+ * @since 2.0.0
+ */
+export const mapWithIndex: <A, B>(
+  f: (i: number, a: A) => B
+) => (fa: NonEmptyArray<A>) => NonEmptyArray<B> = RNEA.mapWithIndex as any
+
+/**
+ * @category Foldable
+ * @since 2.0.0
+ */
+export const reduce: <A, B>(b: B, f: (b: B, a: A) => B) => (fa: NonEmptyArray<A>) => B = RNEA.reduce
+
+/**
+ * @category FoldableWithIndex
+ * @since 2.0.0
+ */
+export const reduceWithIndex: <A, B>(b: B, f: (i: number, b: B, a: A) => B) => (fa: NonEmptyArray<A>) => B =
+  RNEA.reduceWithIndex
+
+/**
+ * @category Foldable
+ * @since 2.0.0
+ */
+export const reduceRight: <A, B>(b: B, f: (a: A, b: B) => B) => (fa: NonEmptyArray<A>) => B = RNEA.reduceRight
+
+/**
+ * @category FoldableWithIndex
+ * @since 2.0.0
+ */
+export const reduceRightWithIndex: <A, B>(b: B, f: (i: number, a: A, b: B) => B) => (fa: NonEmptyArray<A>) => B =
+  RNEA.reduceRightWithIndex
+
+/**
+ * @since 2.6.3
+ */
+export const traverse: PipeableTraverse1<URI> = RNEA.traverse as any
+
+/**
+ * @since 2.6.3
+ */
+export const sequence: Traversable1<URI>['sequence'] = RNEA.sequence as any
+
+/**
+ * @since 2.6.3
+ */
+export const traverseWithIndex: PipeableTraverseWithIndex1<URI, number> = RNEA.traverseWithIndex as any
+
+/**
+ * @since 2.7.0
+ */
+export const extract: Comonad1<URI>['extract'] = head
+
+// -------------------------------------------------------------------------------------
+// instances
+// -------------------------------------------------------------------------------------
+
+/**
+ * @category instances
+ * @since 2.0.0
+ */
+export const URI = 'NonEmptyArray'
+
+/**
+ * @category instances
+ * @since 2.0.0
+ */
+export type URI = typeof URI
+
+declare module './HKT' {
+  interface URItoKind<A> {
+    readonly [URI]: NonEmptyArray<A>
+  }
+}
+
+/**
+ * @category instances
+ * @since 2.7.0
+ */
+export const Functor: Functor1<URI> = {
+  URI,
+  map: map_
+}
+
+/**
+ * @category instances
+ * @since 2.7.0
+ */
+export const FunctorWithIndex: FunctorWithIndex1<URI, number> = {
+  URI,
+  map: map_,
+  mapWithIndex: mapWithIndex_
+}
+
+/**
+ * @category instances
+ * @since 2.7.0
+ */
+export const Applicative: Applicative1<URI> = {
+  URI,
+  map: map_,
+  ap: ap_,
+  of
+}
+
+/**
+ * @category instances
+ * @since 2.7.0
+ */
+export const Monad: Monad1<URI> = {
+  URI,
+  map: map_,
+  ap: ap_,
+  of,
+  chain: chain_
+}
+
+/**
+ * @category instances
+ * @since 2.7.0
+ */
+export const Foldable: Foldable1<URI> = {
+  URI,
+  reduce: reduce_,
+  foldMap: foldMap_,
+  reduceRight: reduceRight_
+}
+
+/**
+ * @category instances
+ * @since 2.7.0
+ */
+export const FoldableWithIndex: FoldableWithIndex1<URI, number> = {
+  URI,
+  reduce: reduce_,
+  foldMap: foldMap_,
+  reduceRight: reduceRight_,
+  reduceWithIndex: reduceWithIndex_,
+  foldMapWithIndex: foldMapWithIndex_,
+  reduceRightWithIndex: reduceRightWithIndex_
+}
+
+/**
+ * @category instances
+ * @since 2.7.0
+ */
+export const Traversable: Traversable1<URI> = {
+  URI,
+  map: map_,
+  reduce: reduce_,
+  foldMap: foldMap_,
+  reduceRight: reduceRight_,
+  traverse: traverse_,
+  sequence
+}
+
+/**
+ * @category instances
+ * @since 2.7.0
+ */
+export const TraversableWithIndex: TraversableWithIndex1<URI, number> = {
+  URI,
+  map: map_,
+  mapWithIndex: mapWithIndex_,
+  reduce: reduce_,
+  foldMap: foldMap_,
+  reduceRight: reduceRight_,
+  traverse: traverse_,
+  sequence,
+  reduceWithIndex: reduceWithIndex_,
+  foldMapWithIndex: foldMapWithIndex_,
+  reduceRightWithIndex: reduceRightWithIndex_,
+  traverseWithIndex: traverseWithIndex_
+}
+
+/**
+ * @category instances
+ * @since 2.7.0
+ */
+export const Alt: Alt1<URI> = {
+  URI,
+  map: map_,
+  alt: alt_
+}
+
+/**
+ * @category instances
+ * @since 2.7.0
+ */
+export const Comonad: Comonad1<URI> = {
+  URI,
+  map: map_,
+  extend: extend_,
+  extract
+}
+
+// TODO: remove in v3
+/**
+ * @category instances
+ * @since 2.0.0
+ */
+export const nonEmptyArray: Monad1<URI> &
+  Comonad1<URI> &
+  TraversableWithIndex1<URI, number> &
+  FunctorWithIndex1<URI, number> &
+  FoldableWithIndex1<URI, number> &
+  Alt1<URI> = {
+  URI,
+  of,
+  map: map_,
+  mapWithIndex: mapWithIndex_,
+  ap: ap_,
+  chain: chain_,
+  extend: extend_,
+  extract: extract,
+  reduce: reduce_,
+  foldMap: foldMap_,
+  reduceRight: reduceRight_,
+  traverse: traverse_,
+  sequence,
+  reduceWithIndex: reduceWithIndex_,
+  foldMapWithIndex: foldMapWithIndex_,
+  reduceRightWithIndex: reduceRightWithIndex_,
+  traverseWithIndex: traverseWithIndex_,
+  alt: alt_
+}
+
+// -------------------------------------------------------------------------------------
+// do notation
+// -------------------------------------------------------------------------------------
+
+/**
+ * @since 2.9.0
+ */
+export const Do: NonEmptyArray<{}> =
+  /*#__PURE__*/
+  of({})
+
+/**
+ * @since 2.8.0
+ */
+export const bindTo: <N extends string>(
+  name: N
+) => <A>(fa: NonEmptyArray<A>) => NonEmptyArray<{ [K in N]: A }> = RNEA.bindTo as any
+
+/**
+ * @since 2.8.0
+ */
+export const bind: <N extends string, A, B>(
+  name: Exclude<N, keyof A>,
+  f: (a: A) => NonEmptyArray<B>
+) => (fa: NonEmptyArray<A>) => NonEmptyArray<{ [K in keyof A | N]: K extends keyof A ? A[K] : B }> = RNEA.bind as any
+
+// -------------------------------------------------------------------------------------
+// pipeable sequence S
+// -------------------------------------------------------------------------------------
+
+/**
+ * @since 2.8.0
+ */
+export const apS: <A, N extends string, B>(
+  name: Exclude<N, keyof A>,
+  fb: NonEmptyArray<B>
+) => (fa: NonEmptyArray<A>) => NonEmptyArray<{ [K in keyof A | N]: K extends keyof A ? A[K] : B }> = RNEA.apS as any
